@@ -19,7 +19,8 @@ import {
   SIGNS,
   STARTING_AP,
   STARTING_HP,
-  WIDTH
+  WIDTH,
+  CANCER_SHIELD_TURN_LIMIT
 } from "../constants";
 import type { GameAction, GameState, Player, PlayerSetup, StarCard, Tile } from "../types";
 import {
@@ -40,7 +41,7 @@ import {
   tracePathBetween
 } from "./board";
 import { computeLunarShieldTiles, damage, resolveEclipse } from "./eclipse";
-import { fmtNum, important, log, logGroup } from "./log";
+import { important, log, logGroup } from "./log";
 import { getValidMoves, getValidPurifyTargets, handSize, placementCost, purifyCost, validPlacement } from "./rules";
 import { article, formatList, getKoreanArticle, pluralSuffix } from "../utils/grammar";
 import { hashStringToSeed, mulberry32, randomSeedString } from "../utils/rng";
@@ -116,6 +117,7 @@ export function initGame(setup: PlayerSetup[], locale: string = getLocale(), see
     messageLog: [],
     messageSeq: 0,
     ariesUsed: false,
+    cancerShieldTurnsLeft: 0,
     libraUsed: false,
     taurusPurifyUsed: false,
     scorpioUsed: false,
@@ -486,6 +488,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             break;
           }
           case "WATER": {
+            if (p.sign === "CANCER" && s.cancerShieldTurnsLeft < CANCER_SHIELD_TURN_LIMIT) {
+              s.cancerShieldTurnsLeft = CANCER_SHIELD_TURN_LIMIT;
+              const msg = tr("log.cancerShield", { name: p.name, count: CANCER_SHIELD_TURN_LIMIT - 1, plural: pluralSuffix(CANCER_SHIELD_TURN_LIMIT - 1) });
+              log(s, msg);
+              important(s, msg);
+            }
             const wounded = s.players.filter((q) => !q.isStasis && q.hp < q.maxHp).sort((a, b) => a.hp - b.hp || (a.id === p.id ? -1 : 0));
             let msg: string;
             if (wounded.length) {
@@ -709,6 +717,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }
       }
       const newActive = s.players[s.active];
+      if (newActive.sign === "CANCER" && s.cancerShieldTurnsLeft > 0) {
+        s.cancerShieldTurnsLeft -= 1;
+        if (s.cancerShieldTurnsLeft === 0) {
+          const msg = tr('log.cancerShieldDeactivated');
+          log(s, msg);
+          important(s, msg);
+        }
+      }
       // Ticks down only at the moment control returns to the Virgo player specifically (not once
       // per END_TURN globally), so it always represents "Virgo turns remaining until usable again"
       // regardless of how many other players' turns pass in between. Using the shield sets this to

@@ -123,6 +123,7 @@ export interface GameState {
   messageLog: string[];
   messageSeq: number;
   ariesUsed: boolean;
+  cancerShieldTurnsLeft: number;
   libraUsed: boolean;
   taurusPurifyUsed: boolean;
   scorpioUsed: boolean;

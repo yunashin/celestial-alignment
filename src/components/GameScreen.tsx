@@ -497,7 +497,8 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         case "5":
         case "6": {
           const i = Number(e.key) - 1;
-          if (i < p.hand.length) onHandSelect(i);
+          const placementDisabled = mode !== "discard" && mode !== "scorpioHeal" && !!unaffordableCardIndices?.has(i);
+          if (i < p.hand.length && !placementDisabled) onHandSelect(i);
           break;
         }
         default:

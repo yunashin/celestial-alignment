@@ -104,9 +104,12 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
             <ShortcutCategory
               label={t("howToPlay.shortcuts.categoryGeneral")}
               rows={[
-                { keyLabel: "E", desc: t("howToPlay.shortcuts.endTurn") },
+                { keyLabel: "Tab", desc: t("howToPlay.shortcuts.focusNext") },
+                { keyLabel: "Shift + Tab", desc: t("howToPlay.shortcuts.focusPrev") },
+                { keyLabel: "Shift + Enter", desc: t("howToPlay.shortcuts.start") },
                 { keyLabel: "B", desc: t("howToPlay.shortcuts.back") },
-                { keyLabel: "Esc", desc: t("howToPlay.shortcuts.escape") }
+                { keyLabel: "Esc", desc: t("howToPlay.shortcuts.escape") },
+                { keyLabel: "E", desc: t("howToPlay.shortcuts.endTurn") }
               ]}
             />
             <ShortcutCategory
@@ -128,10 +131,10 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
             <ShortcutCategory
               label={t("howToPlay.shortcuts.categorySign")}
               rows={[
-                { keyLabel: "V", desc: t("howToPlay.shortcuts.virgoShield") },
-                { keyLabel: "H", desc: t("howToPlay.shortcuts.scorpioHeal") },
+                { keyLabel: "R", desc: t("howToPlay.shortcuts.rotate") },
                 { keyLabel: "T", desc: t("howToPlay.shortcuts.terraform") },
-                { keyLabel: "R", desc: t("howToPlay.shortcuts.rotate") }
+                { keyLabel: "H", desc: t("howToPlay.shortcuts.scorpioHeal") },
+                { keyLabel: "V", desc: t("howToPlay.shortcuts.virgoShield") }
               ]}
             />
           </div>
