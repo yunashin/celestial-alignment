@@ -38,6 +38,95 @@ setup:
   playerNamePlaceholder: "가디언 {n}"
   duplicateElementsWarning: "가디언은 서로 다른 원소를 선택해야 합니다. 승리하려면 플레이어당 하나의 원소 경로가 연결되어야 합니다."
   initializeButton: "오러리 가동 ▸"
+  howToPlayTab: "✦ How to Play"
+
+# PLACEHOLDER — every value below is still the English source text (see this file's header note).
+# Mirrors src/i18n/en.yaml's howToPlay section exactly; only the VALUES need translating.
+howToPlay:
+  intro: "Celestial Alignment is a local, pass-and-play cooperative game — no accounts, no server, no solo AI opponent, just everyone gathered around one screen taking turns. Every action can also be triggered entirely from the keyboard; expand the table below whenever you want the full shortcut list."
+  shortcutsToggle: "⌨ Keyboard Shortcuts"
+  shortcuts:
+    categoryGeneral: "General"
+    categoryBoard: "Board & Movement"
+    categoryActions: "Actions"
+    categorySign: "Sign-Specific"
+    endTurn: "End your turn"
+    back: "Abandon this run and return to Setup"
+    escape: "Cancel the current mode or selection"
+    arrows: "Move the board cursor one tile at a time"
+    confirm: "Confirm the highlighted tile — place, move, or purify it"
+    handSelect: "Select a hand card by its position"
+    move: "Toggle Move mode"
+    purify: "Toggle Purify mode"
+    cosmicDraw: "Toggle Cosmic Draw mode — press again to confirm your discards"
+    virgoShield: "Toggle Virgo's Protective Precision (Virgo only)"
+    scorpioHeal: "Toggle Scorpio's Regeneration heal (Scorpio only)"
+    terraform: "Terraform Hand (Capricorn only)"
+    rotate: "Rotate the armed card before placing it (Aquarius only)"
+  story:
+    heading: "Story"
+    text: "The Great Orrery — the cosmic clockwork that keeps the universe in balance — has shattered into fragments, scattering the stars and corrupting the constellations. A creeping cosmic void, known to every Guardian as the Eclipse, is swallowing the night sky one star at a time. You and your fellow Guardians are humanoid embodiments of the zodiac, and it falls to you to relink the sky before the Eclipse consumes it whole."
+  objective:
+    heading: "Objective"
+    text: "Build a Star Card path — connected, unbroken, and free of corruption — from your Guardian's own element tile all the way to the Orrery at the center of the board. Every Guardian must complete their own path before the Eclipse Tracker reaches 100%, or the Eclipse wins instead."
+  players:
+    heading: "Players"
+    text: "Every Guardian is a Zodiac sign with a unique ability — see the Zodiac Guardians Reference above for the full roster. Each sign also belongs to one of four elements (Fire, Water, Air, or Earth), and every Guardian of that element shares the same Element Surge: a bonus that triggers automatically whenever they place a Star Card matching their own element. No two Guardians in the same game can share an element, since each of you is racing to complete a different element's path."
+  actionPoints:
+    heading: "Action Points"
+    text: "You start each of your turns with {ap} AP (some sign abilities grant more, or discount specific actions to 0). Moving, placing, and purifying all cost AP — once you're out, ending your turn is all that's left to do."
+  decks:
+    heading: "Decks"
+    starDeck:
+      label: "Star Card Deck"
+      text: "Every Star Card has a connector shape and one of the four elements. On your turn, channel a card from your hand onto an empty tile you're standing on or adjacent to — the tile has to connect back to your existing path toward your element's edge node or the Orrery, so you can't drop cards in isolation. (One sign can channel cards at range — see the Zodiac Reference.) Whenever your hand isn't full at the end of your turn, it refills from the Star Card Deck at the start of your next one."
+    eclipseDeck:
+      label: "Eclipse Deck"
+      intro: "One Eclipse Card resolves automatically at the end of every turn, chipping away at your position in one of four ways:"
+      corruption:
+        label: "Corruption Cards"
+        text: "Seize a pure Star Card of a given element, turning it corrupted. A corrupted card decays on its own after {decayTurns} of its placer's own turns and crumbles to dust if it isn't purified first. If no vulnerable card of that element exists to seize, the Eclipse Tracker climbs instead."
+      voidCard:
+        label: "Black Hole Cards"
+        text: "Open a Black Hole on a random empty tile — a permanent, un-purifiable obstacle that damages every Guardian standing adjacent to it the moment it appears."
+      surge:
+        label: "Surge Cards"
+        text: "Jump the Eclipse Tracker by a random amount that grows the more corrupted Star Cards are currently on the board — letting corruption pile up gets dangerous fast."
+      damage:
+        label: "Damage Cards"
+        text: "Strike every Guardian of a given element for 1 HP of damage — and occasionally ('Mercury's in retrograde') hit every Guardian at once, regardless of element."
+  hazards:
+    heading: "Environment Hazards"
+    asteroids:
+      label: "Asteroids"
+      text: "An impassable obstacle that periodically breaks loose and streaks across the board in a straight line — every {interval2}, {interval3}, or {interval4} turns in a 2-, 3-, or 4-Guardian game respectively — destroying the Star Cards in its path and damaging any Guardian caught standing in it (though a Guardian keeps their own card even when they're hit). Completed paths, closed loops, and a few sign-specific shields are all safe from the blast."
+    shootingStars:
+      label: "Shooting Stars"
+      text: "Every board hides {shootingStarCount} Shooting Stars, one per quadrant. Landing a Star Card on one immediately grants a random bonus to every Guardian:"
+  turnActions:
+    heading: "Turn Actions"
+    channel:
+      label: "Channel"
+      text: "Place a Star Card from your hand onto a valid tile, extending your path outward."
+    move:
+      label: "Move"
+      text: "Step onto an adjacent tile with a matching connector along your own path — or spend more AP to move several tiles in a single click, as long as you can afford every step."
+    purify:
+      label: "Purify"
+      text: "Cleanse a corrupted Star Card back to full purity — it's permanently immune to corruption from then on. You can only purify a tile you've personally walked onto (via Move), so plan your route with purifying in mind, not just placement."
+    cosmicDraw:
+      label: "Cosmic Draw"
+      text: "Discard any number of hand cards — up to your whole hand — and immediately redraw until it's full again. A great way to dig for the card you actually need."
+    abilitiesNote: "Every sign also has its own unique ability beyond these four core actions — check the roster above (or in-game) and use it every chance you get."
+  winLoss:
+    heading: "Winning & Losing"
+    text: "The moment every active Guardian's path reaches the Orrery pure and unbroken, you all win together. But if the Eclipse Tracker fills to 100%, or every Guardian ends up in Stasis (0 HP) at the same time with nobody left to revive anyone, the Eclipse wins instead. A Guardian in Stasis isn't gone for good — if an ally ends their turn standing adjacent to them, they reboot at 1 HP."
+  rules:
+    heading: "Key Rules"
+    asteroidProtection: "A completed path is permanently safe from the traveling asteroid."
+    loopImmunity: "A closed loop of Star Cards — any shape that encloses an area — becomes permanently immune to both Corruption and the asteroid, whether or not it's part of a finished path."
+    purifiedImmunity: "Purifying a Star Card makes it permanently immune to Corruption forever after, even if that path is never completed."
+    chainDiscount: "A chain of {chainThreshold}+ connected Star Cards sharing the same element grants a one-time discount to the Eclipse Tracker the moment the chain first reaches that length — bigger if it's your own element."
 
 signs:
   ARIES:
