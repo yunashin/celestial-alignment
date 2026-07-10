@@ -1,0 +1,288 @@
+# English (source of truth). Keys are dot-path, read by src/i18n/index.ts's t() function.
+# Interpolation uses {paramName} placeholders (see t()'s own doc comment for exact syntax).
+#
+# Deliberately NOT translated here: any button label that shows an underlined keyboard-shortcut
+# letter inline in its own text (Move, Purify, Cosmic Draw, End Turn, Back, Rotate, Terraform
+# Hand, Discard to Heal, Protective Precision, Confirm x{n}) — those stay hardcoded English
+# directly in JSX per product decision, since the underline always marks a literal English letter
+# key (e.g. "M" for Move) that wouldn't make sense to underline in a translated word.
+
+common:
+  appNameLine1: "Celestial"
+  appNameLine2: "Alignment"
+  tagline: "Link the Edge Nodes to the Orrery before the Eclipse hits 100%"
+  newRun: "New Run"
+  stasisLabel: "STASIS"
+
+setup:
+  guardianCount: "{count} Guardians"
+  boardSeedLabel: "Board Seed"
+  boardSeedOptional: "Optional"
+  boardSeedPlaceholder: "Leave blank for a random board"
+  saveSeedTooltip: "Save this seed as a favorite"
+  alreadySavedTooltip: "Already saved"
+  favoriteSeedTooltip: "Seed: {seed}"
+  renameSeedTooltip: "Edit to give your seed a nickname"
+  removeSeedTooltip: "Delete seed from favorites"
+  referenceTitle: "Zodiac Guardians Reference"
+  elementGuardiansHeading: "{glyph} {label} Guardians"
+  surgeHeading: "⚡️ {label} Surge"
+  surgeSentence: "Place {article} card to {surgeText}"
+  playerNamePlaceholder: "Guardian {n}"
+  duplicateElementsWarning: "Each Guardian needs a different element — the win condition requires one path per player element."
+  initializeButton: "Initialize Orrery ▸"
+
+signs:
+  ARIES:
+    label: "Aries"
+    ability: "Vanguard"
+    desc: "First Star Card placed each turn costs 0 AP if it lies closer to the Orrery than you."
+  LEO:
+    label: "Leo"
+    ability: "Solar Flare"
+    desc: "Purify also cleanses every corrupted tile along the connected path of Star Cards between you and the purified tile."
+  SAGITTARIUS:
+    label: "Sagittarius"
+    ability: "Astral Arrow"
+    desc: "May place Star Cards anywhere connecting to the path you're currently on (1 AP adjacent to you, 2 AP elsewhere on it)."
+  CANCER:
+    label: "Cancer"
+    ability: "Lunar Shield"
+    desc: "Guardians and Star Cards on or adjacent to your tile take no damage and are protected from asteroid strikes."
+  SCORPIO:
+    label: "Scorpio"
+    ability: "Regeneration"
+    desc: "Once per turn, discard a Star Card to heal any Guardian 1 HP."
+  PISCES:
+    label: "Pisces"
+    ability: "Dream Walk"
+    desc: "Cosmic Draw heals you up to 2 HP per discard action."
+  GEMINI:
+    label: "Gemini"
+    ability: "Twin Paradox"
+    desc: "Manifests 1 extra Star Card whenever drawing."
+  LIBRA:
+    label: "Libra"
+    ability: "Cosmic Balance"
+    desc: "First Cosmic Draw each turn costs 0 AP."
+  AQUARIUS:
+    label: "Aquarius"
+    ability: "Rebel Wave"
+    desc: "Can rotate a Star Card before placing it."
+  TAURUS:
+    label: "Taurus"
+    ability: "Rooted Form"
+    desc: "First Purify each turn costs 0 AP, wherever you've walked."
+  VIRGO:
+    label: "Virgo"
+    ability: "Protective Precision"
+    desc: "Once per turn, shield a 2x2 area from all Eclipse effects and asteroid strikes. Unavailable again on your next turn; ready the turn after."
+  CAPRICORN:
+    label: "Capricorn"
+    ability: "Terraform"
+    desc: "Can turn every card in your hand into an Earth card for 1 AP."
+
+elements:
+  FIRE:
+    label: "Fire"
+    description: "Known for their power and flair"
+  WATER:
+    label: "Water"
+    description: "Emotionally intelligent and have healing powers"
+  EARTH:
+    label: "Earth"
+    description: "Connected to their environments and physical defense"
+  AIR:
+    label: "Air"
+    description: "Talented with their minds and have a need for speed"
+
+surge:
+  AIR: "draw a free replacement card"
+  FIRE: "cleanse one corrupted tile adjacent to the placed card"
+  EARTH: "lock the tile — Eclipse corruption can never seize it"
+  WATER: "heal the most wounded Guardian 1 HP"
+
+powerUps:
+  TRACKER_DOWN: "Eclipse Tracker -{pct}%"
+  BONUS_AP: "+{amount} AP per turn for every Guardian"
+  BONUS_HAND: "+{amount} hand size for every Guardian"
+  HEAL_UNLOCK: "Heal action unlocked for every Guardian — restore {healAmount} of your own HP by ending your turn right away on a turn with ≤{threshold} HP"
+
+# Dummy DAMAGE card flavor text — see DAMAGE_CARDS in constants.ts, which references these keys by
+# name. Freely edit; nothing else needs to change as long as constants.ts's messageKey values keep
+# matching an entry here.
+damageCards:
+  fire: "All Fire signs lose 1 HP."
+  water: "All Water signs lose 1 HP."
+  earth: "All Earth signs lose 1 HP."
+  air: "All Air signs lose 1 HP."
+  all: "Mercury's in retrograde! Everyone loses 1 HP."
+
+controlPanel:
+  abilityTooltip: "This is your sign's unique ability."
+  surgeTooltip: "This effect is unique to {label} signs."
+  elementSurgeLabel: "⚡ {label} Surge:"
+  surgeSentence: "Place {article} card to {surgeText}."
+  tabGuardian: "Guardian"
+  tabLog: "Log · {turn}"
+  hpTooltipTitle: "Health Points (HP)"
+  hpTooltipText: "When at 0, player enters stasis and needs to be revived"
+  apTooltipTitle: "Action Points (AP)"
+  apTooltipText: "Needed to perform actions that have a cost"
+  elementGuardianLabel: "{label} Guardian"
+  stasisNote: "❄ Stasis: Travel to a tile adjacent to a Guardian in stasis to revive them at 1 HP at the end of your turn."
+  cosmicDrawTooltip: "Discard cards of choice and draw until hand is full"
+  modeMove: "Select a highlighted tile to move."
+  modePlace: "Select a highlighted tile to channel the card."
+  modePlaceRebelWave: " Rebel Wave: rotate it first if you'd like a specific orientation."
+  modeDiscard: "Tap hand cards to mark them, then confirm."
+  modePurify: "Select a corrupted tile you've walked (1 AP)"
+  modePurifyFree: " — free first use this turn (Rooted Form)"
+  modeVirgoConfirm: "Tap the glowing area again to confirm the shield, or tap another tile to move it."
+  modeVirgoSelect: "Select the top-left tile of an open 2x2 area to preview the shield."
+  modeScorpioTarget: "Now tap a Guardian below to heal them 1 HP."
+  modeScorpioSelect: "Tap a hand card to discard, then pick who to heal."
+  modeDefault: "Tap a hand card to place it, or choose an action."
+  healGuardianTooltip: "Heal this Guardian 1 HP"
+  stasisRosterTooltip: "In Stasis — will reboot at 1 HP if an ally ends turn adjacent."
+  hpLow: "HP Low"
+
+tileView:
+  orreryTitle: "The Orrery"
+  orreryText: "Link every element's pure path here to win"
+  corruptionTooltipTotal: "{total} more turn{totalPlural} until this Star card disappears — {name} has {left} more turn{leftPlural} left to purify it."
+  corruptionTooltipSingle: "{name} has {left} turns left to purify this Star card."
+  corruptionTooltipUnknown: "Can't resolve number of turns left to purify. This can happen if {name} is stuck in Stasis."
+  corruptionCantPurifyTitle: "{name} can't purify this card since they haven't visited it yet."
+  asteroidTitle: "Asteroid"
+  asteroidText: "Impassable obstacle that may relocate every 4-6 turns, destroying cards and damaging Guardians in its path"
+  voidTitle: "Black Hole"
+  voidText: "Permanent, un-purifiable obstacle that damages adjacent Guardians when it appears"
+  shootingStarTitle: "Shooting Star"
+  lockedTitle: "Locked"
+  lockedText: "Corruption-proof (Earth Surge)"
+  shieldedTitle: "Shielded by Virgo's Protective Precision"
+  shieldedText: "Protected from Eclipse effects and asteroid strikes"
+  lunarShieldTitle: "Protected by Cancer's Lunar Shield"
+  lunarShieldText: "Guardians here take no damage and asteroids can't destroy this tile"
+  enclosedTitle: "Closed loop"
+  enclosedText: "Permanently immune to Corruption and the traveling asteroid"
+
+deckTray:
+  starDeckTooltip: "Star Deck ({count}) — draw pile for hand cards"
+  eclipseDeckTooltip: "Eclipse Deck ({count}) — one resolves automatically at end of turn"
+  discardTooltip: "Discard ({count}) — spent, destroyed, and swapped-out Star Cards"
+
+playerTokens:
+  tooltip: "{name} ({sign})"
+  stasisSuffix: " — In Stasis: will reboot at 1 HP if an ally ends turn adjacent"
+
+cardHand:
+  placementDisabledTooltip: "There is no valid move for this tile OR you don't have enough AP to place it"
+  handEmpty: "Hand empty — end turn to refill"
+
+endOverlay:
+  closeTooltip: "Close and review the game log"
+  title: "☽ Eclipse ☽"
+
+endTurnModal:
+  title: "End your turn?"
+  text: "You still have actions available this turn — end it anyway, or go back and take one?"
+  keepPlaying: "Keep Playing"
+  confirm: "End Turn"
+
+winBanner:
+  title: "✦ Alignment Complete ✦"
+  text: "Every starlight path burns into the Orrery. The constellation holds."
+
+seedDisplay:
+  copiedLabel: "Seed copied!"
+  seedLabel: "Seed: {seed}"
+  copyTooltip: "Copy this board's seed — start a new game with the same seed to replay this exact board"
+
+gameScreen:
+  backTooltip: "Abandon run and return to setup"
+  handHeaderDiscard: "{name}'s hand — tap cards to discard"
+  handHeaderChannel: "{name}'s hand — tap a card to channel it"
+  eclipseTracker: "Eclipse Tracker"
+  tapToDiscard: "Tap to discard"
+  pickACard: "Pick a card"
+  tapToChannel: " Tap to channel"
+  astralArrowTooltip: "Astral Arrow: placing here (not adjacent to you) costs {cost} AP"
+  moveCostTooltip: "Costs {cost} AP to move here"
+
+rules:
+  noCorruptedVisited: "No corrupted tile you've personally visited (via Move) is available to purify."
+  purifyTooCostly: "Purifying the nearest reachable corrupted tile costs {cost} AP — you only have {ap}."
+
+# Dynamic gameplay log messages (GameState.log / messageLog), built by engine/reducer.ts and
+# engine/eclipse.ts via the t() function. These are baked into plain strings at the moment they're
+# generated (not re-translated retroactively if the player switches language mid-game) — same as
+# how most apps treat a historical log/toast. Suffix fragments that get conditionally appended in
+# JS (e.g. " — Vanguard: 0 AP") are their own keys so the calling code can compose them exactly like
+# it already does with plain ternaries.
+log:
+  orreryAwakens: "The Orrery awakens. {names} take their posts."
+  turnAnnounce: "▶ {name}'s turn ({ap} AP)."
+  shootingStarTrackerDown: "💫 Shooting Star! 💫 The Eclipse Tracker eases by {pct}%."
+  shootingStarBonusAp: "💫 Shooting Star! 💫 Every Guardian gains +{amount} AP per turn from now on."
+  shootingStarBonusHand: "💫 Shooting Star! 💫 Every Guardian's hand size grows by {amount} from now on."
+  shootingStarHealUnlock: "💫 Shooting Star! 💫 Every Guardian can heal themselves {amount} HP from now on."
+  asteroidHeader: "☄️ An asteroid tears loose from ({sx},{sy}) and hurtles toward ({dx},{dy})!"
+  asteroidPassesCompletedPath: "　↳ streaks harmlessly past the completed path at ({x},{y})."
+  asteroidGlancesEnclosed: "　↳ glances off the closed loop at ({x},{y}), unable to breach it."
+  asteroidShattersLunarShield: "　↳ shatters against Cancer's Lunar Shield at ({x},{y})."
+  asteroidPassesShootingStar: "　↳ streaks past the shooting star at ({x},{y}), leaving it untouched."
+  asteroidDeflectsVirgoShield: "　↳ deflects off Protective Precision's barrier at ({x},{y})."
+  asteroidGuardianHoldsGround: "　↳ a Guardian holds their ground at ({x},{y}) — the card survives the impact."
+  asteroidObliteratesCard: "　↳ obliterates {elementPhrase} card at ({x},{y})."
+  asteroidScoursCorruption: "　↳ scours corrupted ground at ({x},{y})."
+  asteroidComesToRest: "　↳ comes to rest at ({x},{y})."
+  asteroidDestroysSummary: "☄️ An asteroid from ({sx},{sy}) destroys {count} card{plural} on its way to ({dx},{dy})."
+  win: "✨ ALIGNMENT COMPLETE — all {count} starlight paths feed the Orrery!"
+  lossTracker: "The Eclipse Tracker reached 100%. Darkness swallows the constellation."
+  lossStasis: "All Guardians drift in Stasis. No one remains to tend the starlight."
+  move: "{name} moves to ({x},{y})."
+  moveMulti: "{name} moves {cost} tiles to ({x},{y})."
+  place: "{name} channels {elementPhrase} card onto ({x},{y})"
+  placeRebelWave: " — Rebel Wave rotates it into alignment"
+  placeVanguard: " — Vanguard: 0 AP"
+  chain: "🔗{glyph} {label} chain of {count} cards aligns from ({sx},{sy}) to ({ex},{ey})"
+  chainNoEffect: " — no further Eclipse Tracker effect."
+  chainEased: " — Eclipse Tracker eases by {pct}%."
+  airSurge: "💨💨💨 Air Surge 💨💨💨 {name} draws a free card."
+  fireSurgeCleanse: "🔥🔥🔥 Fire Surge 🔥🔥🔥 Corruption at ({x},{y}) burns away."
+  fireSurgeNoTarget: "🔥 Fire Surge 🔥 No adjacent corruption to burn."
+  earthSurge: "⛰️⛰️⛰️ Earth Surge ⛰️⛰️⛰️ ({x},{y}) is locked against corruption."
+  waterSurgeHeal: "💧💧💧 Water Surge 💧💧💧 {name} is healed to {hp} HP."
+  waterSurgeNoTarget: "💧 Water Surge 💧 Everyone is already at full HP."
+  pathComplete: "🌟 The {label} path blazes into the Orrery!"
+  pathCompleteTrackerEase: " Eclipse Tracker eases by {pct}%."
+  enclosedLoop: "🔒 A closed loop of {count} Star Card{plural} forms — permanently immune to corruption and the traveling asteroid."
+  purify: "{name} purifies ({x},{y})"
+  purifyRootedForm: " — Rooted Form: 0 AP"
+  solarFlare: "☀ Solar Flare burns along the path, cleansing {count} more tile{plural}."
+  virgoShield: "🛡️ {name} channels Protective Precision over ({x1},{y1})–({x2},{y2}) — shielded from Eclipse effects and asteroid strikes."
+  scorpioHeal: "🦂 {name} discards {elementPhrase} card — {targetName} heals to {hp} HP."
+  terraform: "🪨 {name} terraforms {count} card{plural} in hand into Earth."
+  dreamWalk: "🌙 Dream Walk restores {amount} HP to {name}."
+  cosmicDiscard: "{name} cosmic-discards {count} card{plural}"
+  cosmicDiscardBalanced: " (Cosmic Balance: 0 AP)"
+  cosmicDiscardSuffix: " and redraws."
+  corruptionDecay: "🌑 Corruption's grip finally claims {cardPhrase}card at ({x},{y}) — it crumbles to dust."
+  selfHeal: "💗 {name} rests quietly and restores {amount} HP ({hp}/{maxHp})."
+  stasisReboot: "🔄 {name} reboots at 1 HP — an adjacent Guardian pulled them from Stasis."
+  lunarShieldAbsorbs: "🛡 Lunar Shield absorbs {source} damage aimed at {name}."
+  damageTaken: "💥 {name} takes {amount} damage from {source} ({hp} HP)."
+  knockedIntoStasis: "❄ {name} is knocked into Stasis!"
+  corruptionSeize: "🌀{glyph} {label} corruption {glyph}🌀 takes over card at ({x},{y})."
+  corruptionNoTarget: "🌀 Eclipse 🌀 No vulnerable {label} corruption targets — tracker +{pct}%."
+  voidForms: "🕳 Eclipse 🕳 A Black Hole forms at ({x},{y})."
+  voidNoSpace: "🕳 Eclipse 🕳 The Black Hole has no space to form — tracker +{pct}% ({total}%)."
+  eclipseSurge: "⚡🌒 Eclipse Surge 🌒⚡ Tracker jumped {amt}%"
+  eclipseSurgeScaling: " (+{pct}% for {count} corrupted card{plural})."
+  eclipseDamageHeader: "🌒💢 Eclipse {glyphs} {message}"
+  damageSourceEclipse: "the Eclipse"
+  damageSourceCorruption: "Corruption"
+  damageSourceVoidGravity: "Black Hole gravity"
+  damageSourceAsteroid: "the traveling asteroid"

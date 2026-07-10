@@ -1,0 +1,286 @@
+# Korean (한국어). PLACEHOLDER — every value below is still the English source text, copied
+# verbatim from en.yaml, waiting to be translated by hand. The key SET must always exactly mirror
+# en.yaml's (see src/i18n/index.ts's dev-time key-parity check); only the VALUES need translating.
+# Interpolation uses {paramName} placeholders — keep every placeholder token from the English
+# original in your translation, in whatever word order reads naturally in Korean; the code
+# substitutes them positionally by name, not by position in the sentence.
+#
+# Deliberately NOT translated / not present here as separate entries: any button label that shows
+# an underlined keyboard-shortcut letter inline in its own text (Move, Purify, Cosmic Draw, End
+# Turn, Back, Rotate, Terraform Hand, Discard to Heal, Protective Precision, Confirm x{n}) — those
+# stay hardcoded English directly in JSX per product decision, since the underline always marks a
+# literal English letter key (e.g. "M" for Move) that wouldn't make sense to underline in Korean.
+
+# Korean translation for Celestial Alignment generated with Gemini. Keys match the en.yaml dot-paths.
+# Interpolation parameters such as {paramName} are preserved exactly.
+
+common:
+  appNameLine1: "셀레스티얼"
+  appNameLine2: "얼라인먼트"
+  tagline: "에클립스가 100%에 도달하기 전에 외곽의 원소 노드들을 오러리에 연결하세요"
+  newRun: "새로운 성운"
+  stasisLabel: "정지 상태"
+
+setup:
+  guardianCount: "{count}명의 가디언"
+  boardSeedLabel: "보드 시드"
+  boardSeedOptional: "선택 사항"
+  boardSeedPlaceholder: "무작위 보드를 생성하려면 비워두세요"
+  saveSeedTooltip: "이 시드를 즐겨찾기에 저장"
+  alreadySavedTooltip: "이미 저장됨"
+  favoriteSeedTooltip: "시드: {seed}"
+  renameSeedTooltip: "시드의 별명 수정하기"
+  removeSeedTooltip: "즐겨찾기에서 시드 삭제"
+  referenceTitle: "황도대 가디언 도감"
+  elementGuardiansHeading: "{glyph} {label}의 가디언"
+  surgeHeading: "⚡️ {label} 서지"
+  surgeSentence: "카드를 배치하여 {surgeText}"
+  playerNamePlaceholder: "가디언 {n}"
+  duplicateElementsWarning: "가디언은 서로 다른 원소를 선택해야 합니다. 승리하려면 플레이어당 하나의 원소 경로가 연결되어야 합니다."
+  initializeButton: "오러리 가동 ▸"
+
+signs:
+  ARIES:
+    label: "양자리"
+    ability: "선봉장 (Vanguard)"
+    desc: "매 턴 첫 번째로 배치하는 스타 카드가 자신보다 오러리에 더 가까운 위치라면 AP가 0 소모됩니다."
+  LEO:
+    label: "사자자리"
+    ability: "솔라 플레어 (Solar Flare)"
+    desc: "정화 시, 자신과 정화된 타일 사이에 연결된 모든 타일의 오염을 함께 불태워 제거합니다."
+  SAGITTARIUS:
+    label: "사수자리"
+    ability: "아스트랄 애로우 (Astral Arrow)"
+    desc: "현재 자신이 위치한 경로와 연결된 곳이라면 어디든 스타 카드를 배치할 수 있습니다 (인접 타일은 1 AP, 그 외 경로는 2 AP 소모)."
+  CANCER:
+    label: "게자리"
+    ability: "루나 실드 (Lunar Shield)"
+    desc: "자신의 타일 위나 인접한 타일에 있는 가디언과 스타 카드는 아무런 피해를 받지 않으며, 소행성 충돌로부터 보호받습니다."
+  SCORPIO:
+    label: "전갈자리"
+    ability: "재생 (Regeneration)"
+    desc: "턴당 한 번, 스타 카드 1장을 버리고 원하는 가디언의 HP를 1 회복시킵니다."
+  PISCES:
+    label: "물고기자리"
+    ability: "드림 워크 (Dream Walk)"
+    desc: "코스믹 드로우 시, 카드를 버릴 때마다 자신의 HP를 최대 2까지 회복합니다."
+  GEMINI:
+    label: "쌍둥이자리"
+    ability: "쌍둥이 패러독스 (Twin Paradox)"
+    desc: "카드를 뽑을 때마다 스타 카드를 1장 더 생성하여 획득합니다."
+  LIBRA:
+    label: "천칭자리"
+    ability: "코스믹 밸런스 (Cosmic Balance)"
+    desc: "매 턴 첫 번째 코스믹 드로우는 AP가 0 소모됩니다."
+  AQUARIUS:
+    label: "물병자리"
+    ability: "반역의 물결 (Rebel Wave)"
+    desc: "스타 카드를 배치하기 전에 원하는 방향으로 회전할 수 있습니다."
+  TAURUS:
+    label: "황소자리"
+    ability: "굳건한 형상 (Rooted Form)"
+    desc: "자신이 한 번이라도 밟았던 타일이라면, 매 턴 첫 정화 액션의 AP가 0 소모됩니다."
+  VIRGO:
+    label: "처녀자리"
+    ability: "방호의 정밀함 (Protective Precision)"
+    desc: "턴당 한 번, 2x2 영역을 지정해 에클립스의 모든 효과와 소행성 충돌로부터 보호하는 보호막을 생성합니다. 사용 후 다음 턴에는 비활성화되며, 다다음 턴에 다시 충전됩니다."
+  CAPRICORN:
+    label: "염소자리"
+    ability: "테라포밍 (Terraform)"
+    desc: "1 AP를 소모하여 현재 자신의 손에 있는 모든 카드를 대지(Earth) 원소 카드로 변환할 수 있습니다."
+
+elements:
+  FIRE:
+    label: "불"
+    description: "강력한 힘과 화려한 번뜩임으로 유명합니다"
+  WATER:
+    label: "물"
+    description: "감성적 지능이 뛰어나며 신비로운 치유 능력을 지니고 있습니다"
+  EARTH:
+    label: "대지"
+    description: "주변 환경과 깊이 동화되어 있으며 단단한 물리적 방어력을 가집니다"
+  AIR:
+    label: "바람"
+    description: "명석한 두뇌 플레이에 탁월하며 빠른 속도를 중시합니다"
+
+surge:
+  AIR: "무료 대체 카드를 1장 뽑습니다"
+  FIRE: "배치된 카드와 인접한 오염된 타일 1곳을 정화합니다"
+  EARTH: "타일을 고정하여 에클립스 오염에 절대로 잠식되지 않도록 만듭니다"
+  WATER: "가장 부상이 심한 가디언의 HP를 1 회복시킵니다"
+
+powerUps:
+  TRACKER_DOWN: "에클립스 추적기 수치 -{pct}%"
+  BONUS_AP: "모든 가디언의 턴당 AP +{amount}"
+  BONUS_HAND: "모든 가디언의 최대 손패 제한 +{amount}"
+  HEAL_UNLOCK: "모든 가디언의 회복 액션 개방 — HP가 {threshold} 이하일 때 즉시 턴을 마쳐 자신의 HP를 {healAmount}만큼 회복합니다"
+
+damageCards:
+  fire: "모든 불자리 가디언이 HP를 1 잃습니다."
+  water: "모든 물자리 가디언이 HP를 1 잃습니다."
+  earth: "모든 대지자리 가디언이 HP를 1 잃습니다."
+  air: "모든 바람자리 가디언이 HP를 1 잃습니다."
+  all: "수성이 역행합니다! 모든 가디언이 HP를 1 잃습니다."
+
+controlPanel:
+  abilityTooltip: "해당 가디언의 고유 능력입니다."
+  surgeTooltip: "{label}자리 가디언들에게만 발동하는 고유 서지 효과입니다."
+  elementSurgeLabel: "⚡ {label} 서지:"
+  surgeSentence: "카드를 배치하여 {surgeText}."
+  tabGuardian: "가디언"
+  tabLog: "기록 · {turn}"
+  hpTooltipTitle: "체력 (HP)"
+  hpTooltipText: "0이 되면 정지 상태에 빠지며, 아군이 부활시켜 주어야 합니다"
+  apTooltipTitle: "행동력 (AP)"
+  apTooltipText: "비용이 드는 액션을 수행할 때 소모됩니다"
+  elementGuardianLabel: "{label}의 가디언"
+  stasisNote: "❄ 정지 상태: 정지 상태인 가디언의 인접 타일로 이동한 후 턴을 종료하면, 해당 가디언이 1 HP 상태로 재기동합니다."
+  cosmicDrawTooltip: "원하는 카드를 선택해 버린 뒤 손패가 가득 찰 때까지 새로 뽑습니다"
+  modeMove: "이동할 하이라이트 타일을 선택하세요."
+  modePlace: "카드를 전개할 하이라이트 타일을 선택하세요."
+  modePlaceRebelWave: " 반역의 물결: 원한다면 배치 전에 카드를 먼저 회전시킬 수 있습니다."
+  modeDiscard: "버릴 카드를 터치하여 선택한 후 확정하세요."
+  modePurify: "지나왔던 타일 중 오염된 타일을 선택해 정화하세요 (1 AP)"
+  modePurifyFree: " — 이번 턴 최초 1회 무료 (굳건한 형상)"
+  modeVirgoConfirm: "빛나는 영역을 다시 터치하여 보호막을 확정하거나, 다른 타일을 터치해 영역을 이동하세요."
+  modeVirgoSelect: "보호막을 미리 보려면 비어있는 2x2 영역의 좌측 상단 타일을 선택하세요."
+  modeScorpioTarget: "아래 란에서 치유할 가디언을 터치하세요."
+  modeScorpioSelect: "손패에서 버릴 카드를 터치한 후, 치유할 대상을 선택하세요."
+  modeDefault: "손패의 카드를 터치하여 배치하거나 액션을 선택하세요."
+  healGuardianTooltip: "이 가디언의 HP를 1 회복"
+  stasisRosterTooltip: "정지 상태 — 아군이 인접 타일에서 턴을 종료하면 1 HP로 재기동합니다."
+  hpLow: "HP 위험"
+
+tileView:
+  orreryTitle: "오러리 (The Orrery)"
+  orreryText: "승리하려면 모든 원소의 순수한 경로를 이곳에 연결하세요"
+  corruptionTooltipTotal: "이 스타 카드가 파괴되기까지 {total}턴 남았습니다 — {name}이(가) 정화할 수 있는 시간이 {left}턴 남았습니다."
+  corruptionTooltipSingle: "{name}이(가) 이 스타 카드를 정화할 수 있는 시간이 {left}턴 남았습니다."
+  corruptionTooltipUnknown: "정화까지 남은 턴 수를 계산할 수 없습니다. {name}이(가) 정지 상태에 빠졌을 때 발생할 수 있습니다."
+  corruptionCantPurifyTitle: "{name}이(가) 아직 한 번도 방문하지 않은 카드이므로 정화할 수 없습니다."
+  asteroidTitle: "소행성"
+  asteroidText: "이동할 수 없는 장애물입니다. 4~6턴마다 위치를 옮기며 경로상의 카드를 파괴하고 가디언에게 피해를 줍니다"
+  voidTitle: "블랙홀"
+  voidText: "정화할 수 없는 영구적인 장애물로, 출현 시 인접한 가디언에게 피해를 입힙니다"
+  shootingStarTitle: "별똥별"
+  lockedTitle: "잠김"
+  lockedText: "오염 면역 상태 (대지 서지)"
+  shieldedTitle: "처녀자리의 방호의 정밀함 보호막 작동 중"
+  shieldedText: "에클립스 효과 및 소행성 충돌로부터 안전하게 보호됩니다"
+  lunarShieldTitle: "게자리의 루나 실드 보호막 작동 중"
+  lunarShieldText: "이곳의 가디언은 피해를 받지 않으며 소행성이 타일을 파괴할 수 없습니다"
+  enclosedTitle: "폐쇄 루프"
+  enclosedText: "오염 및 이동하는 소행성으로부터 영구적으로 면역됩니다"
+
+deckTray:
+  starDeckTooltip: "스타 덱 ({count}) — 손패 보충용 뽑기 더미"
+  eclipseDeckTooltip: "에클립스 덱 ({count}) — 턴 종료 시 한 장씩 자동으로 발동합니다"
+  discardTooltip: "무덤 ({count}) — 소모, 파괴, 또는 교체된 스타 카드들"
+
+playerTokens:
+  tooltip: "{name} ({sign})"
+  stasisSuffix: " — 정지 상태: 아군이 인접 타일에서 턴을 종료하면 1 HP로 재기동합니다"
+
+cardHand:
+  placementDisabledTooltip: "배치 가능한 유효한 타일이 없거나, 카드를 전개하기 위한 AP가 부족합니다"
+  handEmpty: "손패가 비어 있습니다 — 턴을 종료하면 가득 채워집니다"
+
+endOverlay:
+  closeTooltip: "닫고 게임 기록 검토하기"
+  title: "☽ 에클립스 ☽"
+
+endTurnModal:
+  title: "턴을 종료하시겠습니까?"
+  text: "아직 사용할 수 있는 행동력이 남아 있습니다. 그래도 종료하시겠습니까, 아니면 마저 행동을 수행하시겠습니까?"
+  keepPlaying: "계속 플레이"
+  confirm: "턴 종료"
+
+winBanner:
+  title: "✦ 정렬 완료 (Alignment Complete) ✦"
+  text: "모든 별빛 경로가 오러리로 타오릅니다. 성운의 균형이 붙잡혔습니다."
+
+seedDisplay:
+  copiedLabel: "시드가 복사되었습니다!"
+  seedLabel: "시드: {seed}"
+  copyTooltip: "이 보드의 시드를 복사합니다 — 새로운 게임을 시작할 때 이 시드를 붙여넣으면 완전히 동일한 전장을 재플레이할 수 있습니다"
+
+gameScreen:
+  backTooltip: "현재 여정을 포기하고 설정 화면으로 돌아가기"
+  handHeaderDiscard: "{name}의 손패 — 버릴 카드를 터치하세요"
+  handHeaderChannel: "{name}의 손패 — 배치할 카드를 터치하세요"
+  eclipseTracker: "에클립스 추적기"
+  tapToDiscard: "터치하여 버리기"
+  pickACard: "카드 선택"
+  tapToChannel: " 터치하여 배치"
+  astralArrowTooltip: "아스트랄 애로우: 이곳에 배치 시 (비인접 타일) {cost} AP가 소모됩니다"
+  moveCostTooltip: "이곳으로 이동 시 {cost} AP 소모"
+
+rules:
+  noCorruptedVisited: "직접 방문(이동)한 타일 중에서는 현재 정화할 수 있는 오염된 타일이 없습니다."
+  purifyTooCostly: "가장 가까운 오염 타일을 정화하려면 {cost} AP가 필요하지만, 현재 {ap} AP만 보유하고 있습니다."
+
+log:
+  orreryAwakens: "오러리가 깨어납니다. 가디언 {names}이(가) 임무에 돌입합니다."
+  turnAnnounce: "▶ {name}의 턴 ({ap} AP)."
+  shootingStarTrackerDown: "💫 별똥별이 떨어집니다! 💫 에클립스 추적기 수치가 {pct}%만큼 경감됩니다."
+  shootingStarBonusAp: "💫 별똥별이 떨어집니다! 💫 이제부터 모든 가디언이 매 턴 +{amount} AP를 추가로 획득합니다."
+  shootingStarBonusHand: "💫 별똥별이 떨어집니다! 💫 이제부터 모든 가디언의 최대 손패 제한이 {amount}장 늘어납니다."
+  shootingStarHealUnlock: "💫 별똥별이 떨어집니다! 💫 이제부터 모든 가디언이 자가 회복 액션을 사용할 수 있습니다."
+  asteroidHeader: "☄️ 소행성이 ({sx},{sy})에서 이탈하여 ({dx},{dy})를 향해 돌진합니다!"
+  asteroidPassesCompletedPath: " ↳ ({x},{y})에 완성되어 있던 별빛 경로를 피해 무해하게 스쳐 지나갑니다."
+  asteroidGlancesEnclosed: " ↳ ({x},{y})의 폐쇄 루프에 부딪혀 튕겨 나갔으며, 외벽을 뚫지 못했습니다."
+  asteroidShattersLunarShield: " ↳ ({x},{y})에서 게자리의 루나 실드에 가로막혀 산산조각이 납니다."
+  asteroidPassesShootingStar: " ↳ ({x},{y})의 별똥별을 건드리지 않고 비껴가 스쳐 지나갑니다."
+  asteroidDeflectsVirgoShield: " ↳ ({x},{y})에서 방호의 정밀함 장벽에 부딪혀 굴절됩니다."
+  asteroidGuardianHoldsGround: " ↳ 가디언이 ({x},{y})에서 굳건히 버텨내어 타일의 카드가 파괴를 면했습니다."
+  asteroidObliteratesCard: " ↳ ({x},{y})에 배치되어 있던 {elementPhrase} 카드를 산산조각 냅니다."
+  asteroidScoursCorruption: " ↳ ({x},{y})의 오염된 대지를 쓸어버립니다."
+  asteroidComesToRest: " ↳ 소행성이 ({x},{y})에 멈춰 섭니다."
+  asteroidDestroysSummary: "☄️ ({sx},{sy})에서 날아온 소행성이 ({dx},{dy})로 향하는 경로상의 카드 {count}장을 파괴했습니다."
+  win: "✨ 정렬 완료 — {count}개의 모든 별빛 경로가 오러리에 전력을 공급합니다!"
+  lossTracker: "에클립스 추적기가 100%에 도달했습니다. 어둠이 성운을 완전히 삼켜버립니다."
+  lossStasis: "모든 가디언이 정지 상태에 빠졌습니다. 별빛을 돌볼 자가 아무도 남지 않았습니다."
+  move: "{name}이(가) ({x},{y}) 자리고 이동합니다."
+  moveMulti: "{name}이(가) 행동력을 소모해 ({x},{y}) 방향으로 {cost}칸 이동합니다."
+  place: "{name}이(가) ({x},{y}) 타일에 {elementPhrase} 카드를 전개합니다"
+  placeRebelWave: " — 반역의 물결 능력을 사용해 카드를 완벽한 방향으로 회전시켰습니다"
+  placeVanguard: " — 선봉장 효과: 0 AP 소모"
+  chain: "🔗{glyph} ({sx},{sy})부터 ({ex},{ey})까지 {count}장의 카드가 이어지며 {label} 체인이 연결됩니다"
+  chainNoEffect: " — 에클립스 추적기에 추가 영향은 없습니다."
+  chainEased: " — 에클립스 추적기 수치가 {pct}% 경감됩니다."
+  airSurge: "💨💨💨 바람 서지 💨💨💨 {name}이(가) 카드를 1장 무료로 보충합니다."
+  fireSurgeCleanse: "🔥🔥🔥 불 서지 🔥🔥🔥 ({x},{y})의 오염이 깨끗이 불타 사라집니다."
+  fireSurgeNoTarget: "🔥 불 서지 🔥 인접한 위치에 태워버릴 오염이 없습니다."
+  earthSurge: "⛰️⛰️⛰️ 대지 서지 ⛰️⛰️⛰️ ({x},{y}) 타일이 영구적으로 고정되어 오염으로부터 안전해집니다."
+  waterSurgeHeal: "💧💧💧 물 서지 💧💧💧 {name}의 HP가 {hp}까지 회복됩니다."
+  waterSurgeNoTarget: "💧 물 서지 💧 모든 가디언이 이미 최대 HP 상태입니다."
+  pathComplete: "🌟 {label}의 경로가 오러리에 온전히 연결되며 눈부시게 타오릅니다!"
+  pathCompleteTrackerEase: " 에클립스 추적기 수치가 {pct}% 경감됩니다."
+  enclosedLoop: "🔒 스타 카드 {count}장으로 이루어진 폐쇄 루프가 형성되었습니다 — 이제 오염 및 유동 소행성 공격에 영구 면역됩니다."
+  purify: "{name}이(가) ({x},{y}) 타일을 정화합니다"
+  purifyRootedForm: " — 굳건한 형상 효과: 0 AP 소모"
+  solarFlare: "☀ 솔라 플레어가 경로를 따라 거세게 타오르며 오염 타일 {count}곳을 추가로 깨끗이 청소합니다."
+  virgoShield: "🛡️ {name}이(가) ({x1},{y1})~({x2},{y2}) 구역에 방호의 정밀함 장벽을 전개합니다 — 에클립스 효과 및 소행성 습격으로부터 안전합니다."
+  scorpioHeal: "🦂 {name}이(가) {elementPhrase} 카드를 바쳐 {targetName}의 HP를 {hp}까지 치유합니다."
+  terraform: "🪨 {name}이(가) 손패에 들고 있던 카드 {count}장을 대지 원소로 변환합니다."
+  dreamWalk: "🌙 드림 워크 효과로 {name}의 HP가 {amount}만큼 치유됩니다."
+  cosmicDiscard: "{name}이(가) {count}장의 카드를 코스믹 드로우로 버립니다"
+  cosmicDiscardBalanced: " (코스믹 밸런스 효과: 0 AP 소모)"
+  cosmicDiscardSuffix: " 그 후 덱에서 새로 보충합니다."
+  corruptionDecay: "🌑 오염의 마수가 결국 ({x},{y})에 있던 {cardPhrase}카드를 파괴했습니다 — 카드가 잿더미로 변해 바스러집니다."
+  selfHeal: "💗 {name}이(가) 제자리에서 휴식을 취해 HP를 {amount}만큼 회복합니다 ({hp}/{maxHp})."
+  stasisReboot: "🔄 인접한 아군이 정지 상태에서 인양해 준 덕분에 {name}이(가) 1 HP 상태로 재기동합니다."
+  lunarShieldAbsorbs: "🛡 루나 실드가 {name}을(를) 향한 {source}의 피해를 완벽히 흡수합니다."
+  damageTaken: "💥 {name}이(가) {source}로부터 {amount}의 피해를 입었습니다 (현재 HP: {hp})."
+  knockedIntoStasis: "❄ {name}이(가) 격심한 타격으로 인해 정지 상태에 빠집니다!"
+  corruptionSeize: "🌀{glyph} {label} 오염 {glyph}🌀의 그림자가 ({x},{y})의 카드를 집어삼킵니다."
+  corruptionNoTarget: "🌀 에클립스 🌀 감식된 영역에 취약한 {label} 원소 카드가 없습니다 — 추적기 수치 +{pct}%."
+  voidForms: "🕳 에클립스 🕳 ({x},{y}) 위치에 왜곡된 블랙홀이 생성됩니다."
+  voidNoSpace: "🕳 에클립스 🕳 블랙홀이 물질화될 빈 공간을 찾지 못했습니다 — 추적기 수치 +{pct}% (총 {total}%)."
+  eclipseSurge: "⚡🌒 에클립스 서지 🌒⚡ 추적기 수치가 급격히 {amt}% 증가했습니다"
+  eclipseSurgeScaling: " (오염된 카드 {count}장에 비례해 +{pct}% 가산)."
+  eclipseDamageHeader: "🌒💢 에클립스 {glyphs} {message}"
+  damageSourceEclipse: "에클립스의 충격"
+  damageSourceCorruption: "대지 오염"
+  damageSourceVoidGravity: "블랙홀의 중력권"
+  damageSourceAsteroid: "이동 중인 소행성 충돌"
