@@ -42,11 +42,11 @@ import {
 import { computeLunarShieldTiles, damage, resolveEclipse } from "./eclipse";
 import { fmtNum, important, log, logGroup } from "./log";
 import { getValidMoves, getValidPurifyTargets, handSize, placementCost, purifyCost, validPlacement } from "./rules";
-import { article, formatList, pluralSuffix } from "../utils/grammar";
+import { article, formatList, getKoreanArticle, pluralSuffix } from "../utils/grammar";
 import { hashStringToSeed, mulberry32, randomSeedString } from "../utils/rng";
 // Aliased to `tr` (not `t`) — this file uses `t` extensively as a local Tile variable name (e.g.
 // `for (const t of row)`), which would otherwise shadow the translate function.
-import { t as tr } from "../i18n";
+import { getLocale, t as tr } from "../i18n";
 import { elementLabel } from "../i18n/gameText";
 
 export function drawCards(s: GameState, p: Player, n: number) {
@@ -68,8 +68,13 @@ const asteroidShiftInterval = (playerCount: number) => ASTEROID_SHIFT_INTERVAL[p
  * shooting stars) and initial Star/Eclipse deck order — but NOT the rest of the game, since every
  * subsequent random event (deck reshuffles, Eclipse targeting, asteroid shifts) still uses
  * Math.random(). "Replay this board" means the same starting scenario, not a full deterministic
- * replay of an entire playthrough (which would also require identical player actions throughout). */
-export function initGame(setup: PlayerSetup[], seed?: string): GameState {
+ * replay of an entire playthrough (which would also require identical player actions throughout).
+ * `locale` drives the Korean-vs-English phrasing of the "Orrery awakens" opening message (via
+ * formatList's locale-aware list-joining) and defaults to the reactive global i18n locale — ad-hoc
+ * callers (tests, mainly) that don't care which language the opening message renders in can omit
+ * it, matching the same "sane default for callers that don't need this" pattern makeBoard's own
+ * `activeElements` default already uses. */
+export function initGame(setup: PlayerSetup[], locale: string = getLocale(), seed?: string): GameState {
   const usedSeed = seed && seed.trim() ? seed.trim() : randomSeedString();
   const rng = mulberry32(hashStringToSeed(usedSeed));
   // Only the elements actually in play (never duplicated across players — see SetupScreen) get
@@ -141,7 +146,8 @@ export function initGame(setup: PlayerSetup[], seed?: string): GameState {
     lastSurgeEvent: null
   };
   for (const p of s.players) drawCards(s, p, handSize(s, p));
-  const openingMsg = tr("log.orreryAwakens", { names: formatList([...new Set(s.players.map((p) => p.name))]) });
+  const names = formatList([...new Set(s.players.map((p) => p.name))], locale);
+  const openingMsg = tr("log.orreryAwakens", { names, koreanArticle: getKoreanArticle(names[names.length - 1]) });
   log(s, openingMsg);
   important(s, openingMsg);
   log(s, tr("log.turnAnnounce", { name: s.players[0].name, ap: STARTING_AP }));
@@ -323,11 +329,12 @@ export function checkLoss(s: GameState) {
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
-  if (action.type === "START_GAME") return initGame(action.setup, action.seed);
+  if (action.type === "START_GAME") return initGame(action.setup, action.locale, action.seed);
   if (action.type === "RESET") return { phase: "setup" } as unknown as GameState;
   if (state.phase !== "playing") return state;
   const s = clone(state);
   const p = s.players[s.active];
+  const koreanArticle = getKoreanArticle(p.name);
   s.lastActedPlayerId = p.id;
   // Every action except END_TURN itself counts as "taking an action" for the HEAL_UNLOCK self-heal
   // check below — safe to set unconditionally here (rather than per-case) for the same reason
@@ -355,7 +362,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         cur = moves.get(cur)?.parent ?? null;
       }
       p.position = { x: action.x, y: action.y };
-      log(s, reach.cost > 1 ? tr("log.moveMulti", { name: p.name, cost: reach.cost, x: action.x, y: action.y }) : tr("log.move", { name: p.name, x: action.x, y: action.y }));
+      log(s, reach.cost > 1 ? tr("log.moveMulti", { name: p.name, cost: reach.cost, x: action.x, y: action.y }) : tr("log.move", { name: p.name, x: action.x, y: action.y, koreanArticle }));
       return s;
     }
     case "PLACE": {
@@ -396,10 +403,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       p.hand.splice(action.handIndex, 1);
       log(
         s,
-        tr("log.place", { name: p.name, elementPhrase: article(elementLabel(tr, card.element)), x: action.x, y: action.y }) +
-          (rotated ? tr("log.placeRebelWave") : "") +
-          (vanguard ? tr("log.placeVanguard") : "") +
-          "."
+        tr("log.place", { name: p.name, elementPhrase: article(elementLabel(tr, card.element)), x: action.x, y: action.y, koreanArticle }) +
+        (rotated ? tr("log.placeRebelWave") : "") +
+        (vanguard ? tr("log.placeVanguard") : "") +
+        "."
       );
       const chainAfterGroup = computeSameElementChainGroup(s.tiles, card.element, action.x, action.y);
       const chainAfter = chainAfterGroup.size;
@@ -445,7 +452,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         switch (card.element) {
           case "AIR": {
             drawCards(s, p, 1);
-            const msg = tr("log.airSurge", { name: p.name });
+            const msg = tr("log.airSurge", { name: p.name, koreanArticle });
             log(s, msg);
             important(s, msg);
             break;
@@ -542,7 +549,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       s.tiles[action.x][action.y].isCorrupted = false;
       s.tiles[action.x][action.y].isPurified = true;
       s.tiles[action.x][action.y].corruptionTurnsLeft = null;
-      log(s, tr("log.purify", { name: p.name, x: action.x, y: action.y }) + (cost === 0 ? tr("log.purifyRootedForm") : "") + ".");
+      log(s, tr("log.purify", { name: p.name, x: action.x, y: action.y, koreanArticle }) + (cost === 0 ? tr("log.purifyRootedForm") : "") + ".");
       if (p.sign === "LEO") {
         const route = tracePathBetween(s.tiles, p.position, { x: action.x, y: action.y });
         let flared = 0;
@@ -572,7 +579,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         t.shieldOwner = p.id;
       }
       s.virgoShieldCooldown = 2;
-      log(s, tr("log.virgoShield", { name: p.name, x1: action.x, y1: action.y, x2: action.x + 1, y2: action.y + 1 }));
+      log(s, tr("log.virgoShield", { name: p.name, x1: action.x, y1: action.y, x2: action.x + 1, y2: action.y + 1, koreanArticle }));
       return s;
     }
     case "SCORPIO_HEAL": {
@@ -586,7 +593,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       s.discardEventSeq += 1;
       target.hp += 1;
       s.scorpioUsed = true;
-      log(s, tr("log.scorpioHeal", { name: p.name, elementPhrase: article(elementLabel(tr, card.element)), targetName: target.name, hp: target.hp }));
+      log(s, tr("log.scorpioHeal", { name: p.name, elementPhrase: article(elementLabel(tr, card.element)), targetName: target.name, hp: target.hp, koreanArticle }));
       return s;
     }
     case "CONVERT_HAND_EARTH": {
@@ -600,7 +607,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         converted++;
         return { ...c, element: "EARTH" };
       });
-      log(s, tr("log.terraform", { name: p.name, count: converted, plural: pluralSuffix(converted) }));
+      log(s, tr("log.terraform", { name: p.name, count: converted, plural: pluralSuffix(converted), koreanArticle }));
       return s;
     }
     case "DISCARD": {
@@ -630,7 +637,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (healed) log(s, tr("log.dreamWalk", { amount: healed, name: p.name }));
       }
       drawCards(s, p, handSize(s, p) - p.hand.length);
-      log(s, tr("log.cosmicDiscard", { name: p.name, count: n, plural: pluralSuffix(n) }) + (balanced ? tr("log.cosmicDiscardBalanced") : "") + tr("log.cosmicDiscardSuffix"));
+      log(s, tr("log.cosmicDiscard", { name: p.name, count: n, plural: pluralSuffix(n), koreanArticle }) + (balanced ? tr("log.cosmicDiscardBalanced") : "") + tr("log.cosmicDiscardSuffix"));
       return s;
     }
     case "END_TURN": {
