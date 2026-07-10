@@ -2,6 +2,7 @@ import { type ReactNode, useState } from "react";
 import { ASTEROID_SHIFT_INTERVAL, BODY_FONT_SIZE, CHAIN_LENGTH_THRESHOLD, CORRUPTION_DECAY_TURNS, SHOOTING_STAR_COUNT, STARTING_AP } from "../constants";
 import { powerUpText, type TFunc } from "../i18n/gameText";
 import type { PowerUp } from "../types";
+import { boldify } from "../utils/richText";
 
 // Each of the four Shooting Star power-ups gets the same glyph TileView already uses for its own
 // corner badge on a shooting-star tile — reusing the established icon language here (rather than
@@ -14,6 +15,13 @@ const POWER_UP_ICONS: Record<PowerUp, string> = {
 };
 const POWER_UP_ORDER: PowerUp[] = ["TRACKER_DOWN", "BONUS_AP", "BONUS_HAND", "HEAL_UNLOCK"];
 
+// Both Section and Entry accept either a plain translated string (the common case, auto-run
+// through boldify() so a YAML value's `<b>...</b>` markers become real emphasis) or already-
+// composed JSX (the few Sections that nest multiple Entry children instead of a single sentence)
+// — checking typeof lets every existing plain-string call site pick up bolding for free, without
+// having to wrap each one individually.
+const richChildren = (children: ReactNode): ReactNode => (typeof children === "string" ? boldify(children) : children);
+
 function Section({ heading, children }: { heading: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -21,7 +29,7 @@ function Section({ heading, children }: { heading: string; children: ReactNode }
         {heading}
       </div>
       <div className={`text-[${BODY_FONT_SIZE}] leading-relaxed`} style={{ color: "#c9c0e8" }}>
-        {children}
+        {richChildren(children)}
       </div>
     </div>
   );
@@ -37,7 +45,7 @@ function Entry({ label, color, children }: { label: string; color: string; child
       <span className="font-bold" style={{ color }}>
         {label}
       </span>
-      <span style={{ color: "#a99cd4" }}> — {children}</span>
+      <span style={{ color: "#a99cd4" }}> — {richChildren(children)}</span>
     </div>
   );
 }
@@ -52,7 +60,7 @@ function ShortcutRow({ keyLabel, desc }: { keyLabel: string; desc: string }) {
         {keyLabel}
       </span>
       <span className={`text-[${BODY_FONT_SIZE}]`} style={{ color: "#a99cd4" }}>
-        {desc}
+        {boldify(desc)}
       </span>
     </div>
   );
@@ -77,7 +85,7 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
   return (
     <div className="flex flex-col gap-5">
       <div className={`text-[${BODY_FONT_SIZE}] leading-relaxed`} style={{ color: "#a99cd4" }}>
-        {t("howToPlay.intro")}
+        {boldify(t("howToPlay.intro"))}
       </div>
 
       <div className="rounded-lg border p-2 pb-3" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.8)" }}>
@@ -181,23 +189,23 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
         </figure>
       )}
 
-      <Section heading={t("howToPlay.hazards.heading")}>
+      <Section heading={t("howToPlay.environmentFactors.heading")}>
         <div className="flex flex-col gap-1.5">
-          <Entry label={t("howToPlay.hazards.asteroids.label")} color="#94a3b8">
-            {t("howToPlay.hazards.asteroids.text", {
+          <Entry label={t("howToPlay.environmentFactors.asteroids.label")} color="#94a3b8">
+            {t("howToPlay.environmentFactors.asteroids.text", {
               interval2: ASTEROID_SHIFT_INTERVAL[2],
               interval3: ASTEROID_SHIFT_INTERVAL[3],
               interval4: ASTEROID_SHIFT_INTERVAL[4]
             })}
           </Entry>
           <div>
-            <Entry label={t("howToPlay.hazards.shootingStars.label")} color="#ffd166">
-              {t("howToPlay.hazards.shootingStars.text", { shootingStarCount: SHOOTING_STAR_COUNT })}
+            <Entry label={t("howToPlay.environmentFactors.shootingStars.label")} color="#ffd166">
+              {t("howToPlay.environmentFactors.shootingStars.text", { shootingStarCount: SHOOTING_STAR_COUNT })}
             </Entry>
             <div className="flex flex-col gap-0.5 mt-1 ml-3">
               {POWER_UP_ORDER.map((pu) => (
                 <div key={pu} className={`text-[${BODY_FONT_SIZE}]`} style={{ color: "#a99cd4" }}>
-                  <span style={{ color: "#ffd166" }}>{POWER_UP_ICONS[pu]}</span> {powerUpText(t, pu)}
+                  <span style={{ color: "#ffd166" }}>{POWER_UP_ICONS[pu]}</span> {boldify(powerUpText(t, pu))}
                 </div>
               ))}
             </div>
@@ -220,7 +228,7 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
             {t("howToPlay.turnActions.cosmicDraw.text")}
           </Entry>
           <div className="pt-1" style={{ color: "#a99cd4" }}>
-            {t("howToPlay.turnActions.abilitiesNote")}
+            {boldify(t("howToPlay.turnActions.abilitiesNote"))}
           </div>
         </div>
       </Section>
@@ -229,10 +237,10 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
 
       <Section heading={t("howToPlay.rules.heading")}>
         <ul className="list-disc pl-5 flex flex-col gap-1">
-          <li>{t("howToPlay.rules.asteroidProtection")}</li>
-          <li>{t("howToPlay.rules.loopImmunity")}</li>
-          <li>{t("howToPlay.rules.purifiedImmunity")}</li>
-          <li>{t("howToPlay.rules.chainDiscount", { chainThreshold: CHAIN_LENGTH_THRESHOLD })}</li>
+          <li>{boldify(t("howToPlay.rules.asteroidProtection"))}</li>
+          <li>{boldify(t("howToPlay.rules.loopImmunity"))}</li>
+          <li>{boldify(t("howToPlay.rules.purifiedImmunity"))}</li>
+          <li>{boldify(t("howToPlay.rules.chainDiscount", { chainThreshold: CHAIN_LENGTH_THRESHOLD }))}</li>
         </ul>
       </Section>
     </div>

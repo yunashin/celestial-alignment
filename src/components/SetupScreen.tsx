@@ -19,6 +19,8 @@ import { article } from "../utils/grammar";
 import { HowToPlay } from "./HowToPlay";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Tooltip } from "./Tooltip";
+import boardImage from "../assets/how-to-play/story.png";
+import corruptionImage from '../assets/how-to-play/corrupted-star-card.png';
 
 const defaultSlots = (): PlayerSetup[] => DEFAULT_SIGNS.map((sign, i) => ({ name: `Guardian ${i + 1}`, sign }));
 
@@ -176,7 +178,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
 
       {activeTab === "howToPlay" && (
         <div className="rounded-lg border p-3" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.8)" }}>
-          <HowToPlay t={t} />
+          <HowToPlay t={t} screenshots={{ board: boardImage, corruption: corruptionImage }} />
         </div>
       )}
 
@@ -289,7 +291,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                 <div className="flex gap-2">
                   <input
                     value={slot.name}
-                    onChange={(e) => update(i, { name: e.target.value })}
+                    onChange={(e) => update(i, { name: e.target.value ? e.target.value : `Guardian ${i + 1}` })}
                     className="flex-1 min-w-0 rounded border px-2 py-1.5 text-sm outline-none"
                     style={{ borderColor: "#3b2d5e", background: "#0b0914", color: "#f1eeff" }}
                     placeholder={t("setup.playerNamePlaceholder", { n: i + 1 })}
