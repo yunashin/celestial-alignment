@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BODY_FONT_SIZE, DEFAULT_SIGNS, ELEMENT_META, SIGNS } from "../constants";
 import { useTranslation } from "../i18n";
 import { elementDescription, elementLabel, signAbility, signDesc, signLabel, surgeText, type TFunc } from "../i18n/gameText";
@@ -118,6 +118,24 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
     saveLastSeed(seed);
     onStart(activeSlots, seed);
   };
+
+  useEffect(() => {
+    if (activeTab !== 'setup' || duplicateElements) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+
+      if (k === "enter" && e.shiftKey) {
+        start();
+        e.preventDefault();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeTab, duplicateElements, start]);
 
   const trimmedSeed = seed.trim();
   const alreadyFavorited = favorites.some((f) => f.seed === trimmedSeed);
@@ -326,7 +344,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
           <button
             onClick={start}
             disabled={duplicateElements}
-            className="mx-auto px-8 py-2.5 rounded border text-sm font-bold tracking-[0.25em] uppercase"
+            className="mx-auto px-8 py-2.5 rounded border text-sm font-bold uppercase"
             style={{
               borderColor: duplicateElements ? "#3b2d5e" : "#5eb3ff",
               color: duplicateElements ? "#4c3f73" : "#0b0914",
@@ -335,7 +353,8 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
               cursor: duplicateElements ? "not-allowed" : "pointer"
             }}
           >
-            {t("setup.initializeButton")}
+            <div className="tracking-[0.25em]">Start ▸</div>
+            <div className="text-[11px] tracking-widest opacity-70">Shift + Enter</div>
           </button>
         </>
       )}

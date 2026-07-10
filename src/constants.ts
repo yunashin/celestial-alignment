@@ -25,6 +25,10 @@ export const MAX_HAND_SIZE = DEFAULT_HAND_SIZE + 2;
 // how many Void (Black Hole) cards exist in the Eclipse deck — raising either makes hazards more frequent.
 export const ECLIPSE_CORRUPTION_PER_ELEMENT = 3;
 export const ECLIPSE_VOID_COUNT = 6;
+// Increases the tracker by this amount when a Corruption card is drawn
+export const ECLIPSE_CORRUPTION_TRACKER_BUMP = 1;
+// Increases the tracker by this amount when a Black Hole card is drawn
+export const ECLIPSE_VOID_TRACKER_BUMP = 2;
 // Each Surge card's base tracker-bump amount (before the 4-player scale-down and corruption
 // scaling below apply) — one card is dealt per entry, so this also implicitly sets the Surge card
 // count (6 here). Add/remove entries to change how many Surge cards are in the deck.
@@ -229,6 +233,11 @@ export const SIGNS: Record<Sign, { glyph: string; element: Element; impl: "full"
   VIRGO: { glyph: "♍", element: "EARTH", impl: "full" },
   CAPRICORN: { glyph: "♑", element: "EARTH", impl: "full" }
 };
+
+// # of turns that Lunar Shield lasts after Cancer places a Water card on the board
+// The turn the Water Card is played counts as 1 turn
+// If changing the value, be sure to update "signs.CANCER.desc" in YAML files as well
+export const CANCER_SHIELD_TURN_LIMIT = 2;
 
 // SURGE_META and POWER_UP_META (the per-element Surge blurb and per-power-up payoff blurb) have
 // moved entirely into en.yaml/ko.yaml (`surge.<ELEMENT>` / `powerUps.<POWERUP>`) — see

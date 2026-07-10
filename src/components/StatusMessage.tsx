@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const DISPLAY_MS = 5200; // how long each message stays fully visible before the next one advances
+const DISPLAY_MS = 4500; // how long each message stays fully visible before the next one advances
 const FADE_MS = 200; // brief fade so consecutive messages read as distinct beats, not a jump-cut
 
 /** A single, larger "what just happened" banner — replaces a scrollable multi-line log with one
@@ -74,6 +74,7 @@ export function StatusMessage({ batchId, messages }: { batchId: number; messages
           transitionDuration: `${FADE_MS}ms`,
           fontWeight: "bold",
           fontSize: "20px",
+          height: "26px",
           textShadow: `0 0 8px #b77a00`
         }}
       >

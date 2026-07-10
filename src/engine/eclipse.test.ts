@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DIRS, ECLIPSE_EFFECT_SCALE_4P, ECLIPSE_NO_TARGET_TRACKER_BUMP, ECLIPSE_SURGE_CORRUPTION_SCALING } from "../constants";
+import { CANCER_SHIELD_TURN_LIMIT, DIRS, ECLIPSE_EFFECT_SCALE_4P, ECLIPSE_NO_TARGET_TRACKER_BUMP, ECLIPSE_SURGE_CORRUPTION_SCALING } from "../constants";
 import type { Element, GameState, Point, Sign } from "../types";
 import { isPathComplete } from "./board";
 import { computeLunarShieldTiles, damage, resolveEclipse } from "./eclipse";
@@ -54,6 +54,7 @@ describe("computeLunarShieldTiles", () => {
   it("covers a non-Stasis Cancer Guardian's own tile plus its 4 orthogonal neighbors", () => {
     const s = freshGame(["CANCER", "ARIES"]);
     const p = s.players[0];
+    s.cancerShieldTurnsLeft = CANCER_SHIELD_TURN_LIMIT; // shield only covers tiles while actively powered by a Water card
     const shielded = computeLunarShieldTiles(s);
     expect(shielded.has(`${p.position.x},${p.position.y}`)).toBe(true);
     // At least the node itself and its in-bounds neighbors should be covered.
@@ -79,6 +80,7 @@ describe("damage / Lunar Shield absorption", () => {
     const cancer = s.players[0];
     const target = s.players[1];
     target.position = { x: cancer.position.x, y: cancer.position.y }; // stacked, definitely adjacent
+    s.cancerShieldTurnsLeft = CANCER_SHIELD_TURN_LIMIT; // shield only absorbs damage while actively powered by a Water card
     const before = target.hp;
     const seqBefore = s.shieldBlockSeq;
 
@@ -236,8 +238,8 @@ describe("resolveEclipse Damage Cards", () => {
 
     expect(s.players[0].hp).toBe(fireBefore - 2);
     expect(s.players[1].hp).toBe(waterBefore); // a different element — untouched
-    expect(s.log.some((l) => l.includes("🌒💢 Eclipse 🔥 Test damage message."))).toBe(true);
-    expect(s.messageLog.some((l) => l.includes("🌒💢 Eclipse 🔥 Test damage message."))).toBe(true);
+    expect(s.log.some((l) => l.includes("🌒💢 Eclipse Damage 🔥 Test damage message."))).toBe(true);
+    expect(s.messageLog.some((l) => l.includes("🌒💢 Eclipse Damage 🔥 Test damage message."))).toBe(true);
     expect(s.eclipseEventSeq).toBe(1);
     expect(s.lastEclipseEvent).toEqual({ kind: "DAMAGE", x: null, y: null });
   });
@@ -258,6 +260,7 @@ describe("resolveEclipse Damage Cards", () => {
   it("respects Cancer's Lunar Shield exactly like any other damage source", () => {
     const s = freshGame(["ARIES", "CANCER"]);
     s.players[1].position = { x: s.players[0].position.x, y: s.players[0].position.y }; // Cancer stacked on the Fire Guardian
+    s.cancerShieldTurnsLeft = CANCER_SHIELD_TURN_LIMIT; // shield only absorbs damage while actively powered by a Water card
     s.eclipseDeck = [{ id: "forced", type: "DAMAGE", damageElements: ["FIRE"], damageMessage: "Test.", damageHpLost: 1 }];
     const before = s.players[0].hp;
 
@@ -276,7 +279,7 @@ describe("resolveEclipse Damage Cards", () => {
     resolveEclipse(s);
 
     expect(s.players[0].hp).toBe(before);
-    expect(s.log.some((l) => l.includes("🌒💢 Eclipse 🔥 Test."))).toBe(true);
+    expect(s.log.some((l) => l.includes("🌒💢 Eclipse Damage 🔥 Test."))).toBe(true);
   });
 });
 

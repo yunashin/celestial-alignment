@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DIRS, PATH_COMPLETE_TRACKER_REDUCTION_4P } from "../constants";
+import { CANCER_SHIELD_TURN_LIMIT, DIRS, PATH_COMPLETE_TRACKER_REDUCTION_4P } from "../constants";
 import type { Element, GameState, PlayerSetup, Sign, StarCard } from "../types";
 import { isValidShieldAnchor } from "./board";
 import { gameReducer, initGame } from "./reducer";
@@ -676,6 +676,87 @@ describe("Virgo's Protective Precision", () => {
     expect(s.players[s.active].sign).toBe("VIRGO");
     expect(s.virgoShieldCooldown).toBe(0);
     expect(canUseVirgoShield(s)).toBe(true);
+  });
+});
+
+describe("Cancer's Lunar Shield (Water-card-triggered, timed)", () => {
+  it("activates for CANCER_SHIELD_TURN_LIMIT of Cancer's own turns when they place a Water card, ticking down only on Cancer's own subsequent turns and logging when it expires", () => {
+    let s = freshGame(["CANCER", "ARIES"]);
+    expect(s.cancerShieldTurnsLeft).toBe(0);
+
+    const node = s.nodes.WATER;
+    const [dx, dy] = DIRS[node.dir];
+    const target = { x: node.x + dx, y: node.y + dy };
+    s.players[0].hand = [cross("WATER")];
+    s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target.x, y: target.y });
+
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT);
+    expect(s.log.some((l) => l.includes("Lunar Shield powered up"))).toBe(true);
+
+    // P2 (Aries)'s turn — the countdown only ticks when control returns to Cancer specifically.
+    s = gameReducer(s, { type: "END_TURN" });
+    expect(s.players[s.active].sign).toBe("ARIES");
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT);
+
+    // Back to Cancer's very next turn: the casting turn already counted as 1, so this is now down by one.
+    s = gameReducer(s, { type: "END_TURN" });
+    expect(s.players[s.active].sign).toBe("CANCER");
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT - 1);
+
+    // P2's turn again.
+    s = gameReducer(s, { type: "END_TURN" });
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT - 1);
+
+    // The turn after that: shield runs out exactly as Cancer's turn begins, and it's logged.
+    s = gameReducer(s, { type: "END_TURN" });
+    expect(s.players[s.active].sign).toBe("CANCER");
+    expect(s.cancerShieldTurnsLeft).toBe(0);
+    expect(s.log.some((l) => l.includes("Water power has been drained"))).toBe(true);
+  });
+
+  it("refreshes back to the full duration if Cancer places another Water card before the shield expires", () => {
+    let s = freshGame(["CANCER", "ARIES"]);
+    s.cancerShieldTurnsLeft = 1; // simulate a shield partway through decaying
+    const node = s.nodes.WATER;
+    const [dx, dy] = DIRS[node.dir];
+    const target = { x: node.x + dx, y: node.y + dy };
+    s.players[0].hand = [cross("WATER")];
+
+    s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target.x, y: target.y });
+
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT);
+  });
+
+  it("does nothing (no re-log, no change) if Cancer places a Water card while the shield is already at full duration", () => {
+    let s = freshGame(["CANCER", "ARIES"]);
+    const node = s.nodes.WATER;
+    const [dx, dy] = DIRS[node.dir];
+    const target = { x: node.x + dx, y: node.y + dy };
+    s.players[0].hand = [cross("WATER")];
+    s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target.x, y: target.y });
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT);
+
+    const target2 = { x: target.x + dx, y: target.y + dy };
+    s = gameReducer(s, { type: "MOVE", x: target.x, y: target.y });
+    s.players[0].hand = [cross("WATER")];
+    s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target2.x, y: target2.y });
+
+    expect(s.cancerShieldTurnsLeft).toBe(CANCER_SHIELD_TURN_LIMIT);
+    expect(s.log.filter((l) => l.includes("Lunar Shield powered up")).length).toBe(1);
+  });
+
+  it("a non-Cancer Water sign placing a Water card triggers Water Surge but never activates the Lunar Shield", () => {
+    let s = freshGame(["PISCES", "ARIES"]);
+    const node = s.nodes.WATER;
+    const [dx, dy] = DIRS[node.dir];
+    const target = { x: node.x + dx, y: node.y + dy };
+    s.players[0].hp = 1; // wounded, so Water Surge has a target to heal
+    s.players[0].hand = [cross("WATER")];
+
+    s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target.x, y: target.y });
+
+    expect(s.cancerShieldTurnsLeft).toBe(0);
+    expect(s.log.some((l) => l.includes("Lunar Shield powered up"))).toBe(false);
   });
 });
 
