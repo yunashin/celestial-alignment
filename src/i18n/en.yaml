@@ -61,6 +61,8 @@ howToPlay:
     scorpioHeal: "Toggle Scorpio's Regeneration heal (Scorpio only)"
     terraform: "Terraform Hand (Capricorn only)"
     rotate: "Rotate the armed card before placing it (Aquarius only)"
+  boardImgCaption: "A game in progress — paths of Star Cards reaching out from the edge nodes toward the Orrery at the center."
+  corruptionImgCaption: "A corrupted tile's countdown tooltip, with an asteroid and a shooting star nearby."
   story:
     heading: "Story"
     text: "The Great Orrery — the cosmic clockwork that keeps the universe in balance — has shattered into fragments, scattering the stars and corrupting the constellations. A creeping cosmic void, known to every Guardian as the <b>Eclipse</b>, is swallowing the night sky one star at a time. You and your fellow Guardians are humanoid embodiments of the zodiac, and it falls to you to relink the sky before the Eclipse consumes it whole."

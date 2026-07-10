@@ -144,7 +144,7 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
         <figure className="flex flex-col gap-1">
           <img src={screenshots.board} alt="A Celestial Alignment board mid-game, showing Star Card paths built out from several edge nodes toward the Orrery" className="w-full rounded-lg border" style={{ borderColor: "#3b2d5e" }} />
           <figcaption className="text-[11px] text-center" style={{ color: "#6d5f94" }}>
-            A game in progress — paths of Star Cards reaching out from the edge nodes toward the Orrery at the center.
+            {t("howToPlay.boardImgCaption")}
           </figcaption>
         </figure>
       )}
@@ -184,7 +184,7 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
         <figure className="flex flex-col gap-1">
           <img src={screenshots.corruption} alt="A corrupted Star Card tile on the board with its countdown tooltip open, next to an asteroid and a shooting star" className="w-full rounded-lg border" style={{ borderColor: "#3b2d5e" }} />
           <figcaption className="text-[11px] text-center" style={{ color: "#6d5f94" }}>
-            A corrupted tile's countdown tooltip, with an asteroid and a shooting star nearby.
+            {t("howToPlay.corruptionImgCaption")}
           </figcaption>
         </figure>
       )}
