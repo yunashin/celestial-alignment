@@ -112,10 +112,10 @@ powerUps:
 # name. Freely edit; nothing else needs to change as long as constants.ts's messageKey values keep
 # matching an entry here.
 damageCards:
-  fire: "All Fire signs lose 1 HP."
-  water: "All Water signs lose 1 HP."
-  earth: "All Earth signs lose 1 HP."
-  air: "All Air signs lose 1 HP."
+  fire: "Fire Guardians lose 1 HP."
+  water: "Water Guardians lose 1 HP."
+  earth: "Earth Guardians lose 1 HP."
+  air: "Air Guardians lose 1 HP."
   all: "Mercury's in retrograde! Everyone loses 1 HP."
 
 controlPanel:

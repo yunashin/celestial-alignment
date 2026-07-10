@@ -166,7 +166,7 @@ export interface PlayerSetup {
 }
 
 export type GameAction =
-  | { type: "START_GAME"; setup: PlayerSetup[]; seed?: string }
+  | { type: "START_GAME"; setup: PlayerSetup[]; locale: string; seed?: string }
   | { type: "RESET" }
   | { type: "MOVE"; x: number; y: number }
   | { type: "PLACE"; handIndex: number; x: number; y: number; rotation?: number }

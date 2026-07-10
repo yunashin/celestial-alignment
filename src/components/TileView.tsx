@@ -5,7 +5,7 @@ import { useTranslation } from "../i18n";
 import { powerUpText } from "../i18n/gameText";
 import type { Connections, Player, Tile } from "../types";
 import { lerpColor } from "../utils/colors";
-import { pluralSuffix } from "../utils/grammar";
+import { getKoreanArticle, pluralSuffix } from "../utils/grammar";
 import { ApBadge } from "./ApBadge";
 import { CardGlyph } from "./CardGlyph";
 import { PlayerTokens } from "./PlayerTokens";
@@ -67,7 +67,9 @@ export function TileView({
   const { t } = useTranslation();
   const playersHere = players?.filter((p) => p.position.x === tile.x && p.position.y === tile.y);
   const activePlayerHere = playersHere.find((pl) => pl.id === activeId);
-  const placedByPlayerName = players.find((pl) => pl.id === tile.placedBy)?.name ?? "";
+  const placedByPlayer = players.find((pl) => pl.id === tile.placedBy);
+  const placedByPlayerName = placedByPlayer?.name ?? "";
+  const koreanArticle = getKoreanArticle(placedByPlayerName);
   const glowColor = glow?.color;
   let borderColor = "#2a2340";
   let bg = "rgba(18,14,32,0.85)";
@@ -233,7 +235,6 @@ export function TileView({
           // tooltip instead, alongside the total. Falls back to the placer-only count (or "?") if
           // the total can't be resolved (e.g. the placer is stuck in Stasis indefinitely).
           const displayed = corruptionTotalTurns ?? tile.corruptionTurnsLeft ?? "?";
-          const placedByPlayer = players.find((pl) => pl.id === tile.placedBy);
           const tooltipText =
             corruptionTotalTurns !== null && corruptionTotalTurns !== undefined
               ? t("tileView.corruptionTooltipTotal", {
@@ -241,11 +242,12 @@ export function TileView({
                 totalPlural: pluralSuffix(corruptionTotalTurns),
                 name: placedByPlayerName,
                 left: tile.corruptionTurnsLeft ?? "?",
-                leftPlural: pluralSuffix(tile.corruptionTurnsLeft ?? 0)
+                leftPlural: pluralSuffix(tile.corruptionTurnsLeft ?? 0),
+                koreanArticle
               })
               : tile.corruptionTurnsLeft !== null && tile.corruptionTurnsLeft !== undefined
-                ? t("tileView.corruptionTooltipSingle", { name: placedByPlayerName, left: tile.corruptionTurnsLeft })
-                : t("tileView.corruptionTooltipUnknown", { name: placedByPlayer?.name ?? "" });
+                ? t("tileView.corruptionTooltipSingle", { name: placedByPlayerName, left: tile.corruptionTurnsLeft, koreanArticle })
+                : t("tileView.corruptionTooltipUnknown", { name: placedByPlayerName, koreanArticle });
           // Purify is path-based (only tiles a player has personally walked onto via MOVE), and
           // placing a card at a tile does NOT count as visiting it — the pawn didn't walk there. A
           // card placed at range (Sagittarius, or any sign's own spawn-adjacent placements before
@@ -256,7 +258,7 @@ export function TileView({
           return (
             <Tooltip
               className={`relative inline-flex w-full h-full${playersHere.length > 0 ? " group-hover/tile:z-20" : ""}`}
-              title={placedByPlayerHasNotVisited ? t("tileView.corruptionCantPurifyTitle", { name: placedByPlayerName }) : undefined}
+              title={placedByPlayerHasNotVisited ? t("tileView.corruptionCantPurifyTitle", { name: placedByPlayerName, koreanArticle }) : undefined}
               text={tooltipText}
               side="right"
             >
