@@ -22,7 +22,7 @@ import { Tooltip } from "./Tooltip";
 import boardImage from "../assets/how-to-play/story.png";
 import corruptionImage from '../assets/how-to-play/corrupted-star-card.png';
 
-const defaultSlots = (): PlayerSetup[] => DEFAULT_SIGNS.map((sign, i) => ({ name: `Guardian ${i + 1}`, sign }));
+const defaultSlots = (numSlots: 2 | 3 | 4): PlayerSetup[] => DEFAULT_SIGNS[numSlots].map((sign, i) => ({ name: `Guardian ${i + 1}`, sign }));
 
 function FavoriteSeedRow({
   fav,
@@ -89,10 +89,10 @@ function FavoriteSeedRow({
 
 export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?: string) => void }) {
   const { t } = useTranslation();
-  const [count, setCount] = useState(() => loadLastCount() ?? 2);
+  const [count, setCount] = useState<2 | 3 | 4>(() => loadLastCount() ?? 2);
   const [slots, setSlots] = useState<PlayerSetup[]>(() => {
-    const stored = loadLastSetups()[count] ?? defaultSlots();
-    return Array.from({ length: 4 }, (_, i) => stored[i] ?? defaultSlots()[i]);
+    const stored = loadLastSetups()[count] ?? defaultSlots(count);
+    return Array.from({ length: 4 }, (_, i) => stored[i] ?? defaultSlots(count)[i]);
   });
   const [seed, setSeed] = useState(() => loadLastSeed());
   const [favorites, setFavorites] = useState<FavoriteSeed[]>(() => loadFavoriteSeeds());
@@ -100,18 +100,19 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
   // "How to Play" sits as a 4th tab to the left of the 2/3/4-Guardian count tabs — selecting a
   // count always jumps back to the "setup" tab (see changeCount below) so there's no dead-end
   // where a count button looks selectable but silently does nothing while the guide is showing.
-  const [activeTab, setActiveTab] = useState<"setup" | "howToPlay">("setup");
   const activeSlots = slots.slice(0, count);
+  const [activeTab, setActiveTab] = useState<"setup" | "howToPlay">("setup");
   const elements = activeSlots.map((s) => SIGNS[s.sign].element);
   const duplicateElements = new Set(elements).size !== elements.length;
   const update = (i: number, patch: Partial<PlayerSetup>) => {
     setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   };
-  const changeCount = (n: number) => {
+  const changeCount = (n: 2 | 3 | 4) => {
     setCount(n);
     setActiveTab("setup");
     const stored = loadLastSetups()[n];
     if (stored) setSlots((prev) => prev.map((s, i) => stored[i] ?? s));
+    else setSlots(defaultSlots(n));
   };
   const start = () => {
     saveLastSetup(count, activeSlots);
@@ -177,7 +178,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
         >
           {t("setup.howToPlayTab")}
         </button>
-        {[2, 3, 4].map((n) => (
+        {([2, 3, 4] as (2 | 3 | 4)[]).map((n) => (
           <button
             key={n}
             onClick={() => changeCount(n)}
