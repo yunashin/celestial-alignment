@@ -36,7 +36,7 @@ export const
   ECLIPSE_SURGE_AMOUNTS = {
     2: [10, 10, 15, 15, 15, 20, 20, 20, 25],
     3: [10, 10, 10, 15, 15, 15, 20, 20, 20],
-    4: [10, 10, 10, 10, 15, 15, 15, 15, 20],
+    4: [5, 6, 8, 10, 10, 10, 10, 15, 15],
   };
 // A Corruption/Void card that finds no legal target is a "wasted" card — it still nudges the
 // tracker up so the deck can't stall forever, but softer than a real hit (this number gets added to
