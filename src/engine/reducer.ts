@@ -10,7 +10,6 @@ import {
   HAZARD_DAMAGE,
   HEIGHT,
   MAX_HP,
-  OPP,
   PATH_COMPLETE_TRACKER_REDUCTION_4P,
   SHOOTING_STAR_AP_BONUS,
   SHOOTING_STAR_HAND_BONUS,
@@ -20,7 +19,8 @@ import {
   STARTING_AP,
   STARTING_HP,
   WIDTH,
-  CANCER_SHIELD_TURN_LIMIT
+  CANCER_SHIELD_TURN_LIMIT,
+  CHAIN_TRACKER_BONUS_DISCOUNT
 } from "../constants";
 import type { GameAction, GameState, Player, PlayerSetup, StarCard, Tile } from "../types";
 import {
@@ -385,21 +385,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const completedBefore = ELEMENTS.filter((el) => isPathComplete(s.tiles, el, s.center, s.nodes));
       const rotated = conn !== card.connections;
       const placedTile = s.tiles[action.x][action.y];
-      // Largest pre-existing SAME-ELEMENT chain group touching this tile, checked BEFORE the card
-      // lands, so a chain that was already 3+ doesn't re-trigger the discount every time it's
-      // extended. Purely physical connector adjacency of cards sharing `card.element` — no
-      // node-attachment requirement, no cross-element "wildcard" counting.
-      let chainBefore = 0;
-      for (const d of DIR_KEYS) {
-        if (!conn[d]) continue;
-        const [dx, dy] = DIRS[d];
-        const nx = action.x + dx, ny = action.y + dy;
-        if (!inBounds(nx, ny)) continue;
-        const nt = s.tiles[nx][ny];
-        if (nt.card && nt.card.connections[OPP[d]]) {
-          chainBefore = Math.max(chainBefore, computeSameElementChainGroup(s.tiles, card.element, nx, ny).size);
-        }
-      }
       placedTile.card = { ...card, connections: conn };
       placedTile.placedBy = p.id;
       p.hand.splice(action.handIndex, 1);
@@ -412,13 +397,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       );
       const chainAfterGroup = computeSameElementChainGroup(s.tiles, card.element, action.x, action.y);
       const chainAfter = chainAfterGroup.size;
-      // The animation/log/Message Log trigger fires on EVERY placement that leaves a 3+ chain
-      // (chainAfter >= threshold), not just the one that first crosses it — but the actual Tracker
-      // discount below is still gated on `crossedThreshold` exactly as before, so extending an
-      // already-3+ chain further keeps celebrating the chain visually without re-discounting the
-      // Tracker every time. Game functionality (the discount amount/timing) is unchanged.
+      // The animation/log/Message Log trigger — and the Tracker discount itself — fire on EVERY
+      // placement that leaves a 3+ chain (chainAfter >= threshold), not just the one that first
+      // crosses it: extending an already-3+ chain keeps discounting the Tracker further, scaling
+      // with how far past the threshold the chain now sits (`chainExtraLength` below), so a longer
+      // chain is worth progressively more each time it grows.
       if (chainAfter >= CHAIN_LENGTH_THRESHOLD) {
-        const crossedThreshold = chainBefore < CHAIN_LENGTH_THRESHOLD;
         // "Start" of the chain is whichever of its tiles sits closest to this element's own node —
         // a reasonable, well-defined anchor even for a chain that isn't a straight line. "End" is
         // simply the tile that was just placed.
@@ -436,14 +420,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const chainEnd = { x: action.x, y: action.y };
         s.chainEventSeq += 1;
         s.lastChainEvent = { tiles: Array.from(chainAfterGroup), start: chainStart, end: chainEnd };
-        let trackerPhrase = tr("log.chainNoEffect");
-        if (crossedThreshold) {
-          const reduction = card.element === p.element ? CHAIN_TRACKER_DISCOUNT_OWN : CHAIN_TRACKER_DISCOUNT;
-          s.tracker = Math.max(0, s.tracker - reduction);
-          trackerPhrase = tr("log.chainEased", { pct: reduction });
-        }
+        const chainExtraLength = chainAfter - CHAIN_LENGTH_THRESHOLD + 1;
+        const reduction = (card.element === p.element ? CHAIN_TRACKER_DISCOUNT_OWN : CHAIN_TRACKER_DISCOUNT) + CHAIN_TRACKER_BONUS_DISCOUNT * chainExtraLength;
+        s.tracker = Math.max(0, s.tracker - reduction);
+        const trackerPhrase = tr("log.chainEased", { pct: reduction });
+        const glyph = ELEMENT_META[card.element].glyph;
+        // Capped so a very long chain (e.g. one that also happens to complete a whole path) doesn't
+        // print a wall of repeated emoji into the log — the number/tracker text already conveys size.
+        const glyphMsg = glyph.repeat(Math.min(chainExtraLength, 5));
         const chainMsg =
-          tr("log.chain", { glyph: ELEMENT_META[card.element].glyph, label: elementLabel(tr, card.element), count: chainAfter, sx: chainStart.x, sy: chainStart.y, ex: chainEnd.x, ey: chainEnd.y }) +
+          tr("log.chain", { glyph: glyphMsg, label: elementLabel(tr, card.element), count: chainAfter, sx: chainStart.x, sy: chainStart.y, ex: chainEnd.x, ey: chainEnd.y }) +
           trackerPhrase;
         log(s, chainMsg);
         important(s, chainMsg);
