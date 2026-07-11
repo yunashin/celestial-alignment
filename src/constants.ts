@@ -34,9 +34,9 @@ export const ECLIPSE_VOID_TRACKER_BUMP = 3;
 // count (6 here). Add/remove entries to change how many Surge cards are in the deck.
 export const
   ECLIPSE_SURGE_AMOUNTS = {
-    2: [10, 10, 15, 15, 15, 20, 20, 20, 25],
-    3: [10, 10, 10, 15, 15, 15, 20, 20, 20],
-    4: [5, 6, 8, 10, 10, 10, 10, 15, 15],
+    2: [10, 15, 15, 15, 20, 20, 20, 25],
+    3: [5, 5, 10, 10, 10, 15, 15, 20],
+    4: [5, 5, 6, 6, 8, 8, 10, 10],
   };
 // A Corruption/Void card that finds no legal target is a "wasted" card — it still nudges the
 // tracker up so the deck can't stall forever, but softer than a real hit (this number gets added to
@@ -251,4 +251,8 @@ export const SHAPE_CORNER: Connections = { top: true, right: true, bottom: false
 export const SHAPE_TEE: Connections = { top: true, right: true, bottom: false, left: true };
 export const SHAPE_CROSS: Connections = { top: true, right: true, bottom: true, left: true };
 
-export const DEFAULT_SIGNS: Sign[] = ["AQUARIUS", "ARIES", "CAPRICORN", "CANCER"];
+export const DEFAULT_SIGNS: { [key: number]: Sign[] } = {
+  2: ["AQUARIUS", "SCORPIO"],
+  3: ["AQUARIUS", "ARIES", "SCORPIO"],
+  4: ["AQUARIUS", "ARIES", "CAPRICORN", "SCORPIO"]
+};

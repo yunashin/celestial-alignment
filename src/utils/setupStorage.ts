@@ -41,10 +41,10 @@ export function loadLastSetups(): StoredSetups {
   }
 }
 
-export function loadLastCount(): number | null {
+export function loadLastCount(): 2 | 3 | 4 | null {
   const raw = safeGet(COUNT_KEY);
   const n = raw ? Number(raw) : NaN;
-  return [2, 3, 4].includes(n) ? n : null;
+  return [2, 3, 4].includes(n) ? n as (2 | 3 | 4) : null;
 }
 
 /** Called once a game actually starts, so "last played" reflects real replays, not every edit. */
