@@ -13,7 +13,6 @@ import { Tooltip } from "./Tooltip";
 type Tab = "status" | "log";
 
 function AbilityBlock({ player, t }: { player: Player; t: TFunc }) {
-  const meta = SIGNS[player.sign];
   const elc = ELEMENT_META[player.element].color;
   const label = elementLabel(t, player.element);
   return (
@@ -139,12 +138,9 @@ export function ControlPanel({
                       {p.name}
                     </div>
                     <div className="text-[12px] tracking-widest uppercase" style={{ color: elc }}>
-                      {signLabel(t, p.sign)}
+                      {signLabel(t, p.sign)} · {t("controlPanel.elementGuardianLabel", { label: elementLabel(t, p.element) })}
                     </div>
                   </div>
-                </div>
-                <div className="text-[12px] tracking-widest uppercase" style={{ color: elc }}>
-                  {t("controlPanel.elementGuardianLabel", { label: elementLabel(t, p.element) })}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
@@ -260,7 +256,7 @@ export function ControlPanel({
                   key={q.id}
                   className="rounded border"
                   style={{
-                    borderColor: hasOneHpLeft ? "rgb(167, 62, 62)" : isActive ? c : "#2a2340",
+                    borderColor: isActive ? c : hasOneHpLeft ? "rgb(167, 62, 62)" : "#2a2340",
                     background: hasOneHpLeft ? "rgb(62, 25, 25)" : isActive ? ELEMENT_META[q.element].soft : "transparent",
                     animation: q.id === shieldFlashPlayerId ? "caShieldBlock 1.2s ease-out" : undefined
                   }}

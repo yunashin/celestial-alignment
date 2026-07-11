@@ -273,22 +273,22 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                   return (
                     <div key={k}>
                       {idx % 3 === 0 && (
-                        <div className="py-2">
-                          <div className="font-bold" style={{ fontSize: "20px", color: c }}>
+                        <div className="py-1">
+                          <div className="font-bold px-6" style={{ fontSize: "20px", color: c }}>
                             {t("setup.elementGuardiansHeading", { glyph: ELEMENT_META[element].glyph, label })}
                           </div>
-                          <div className="font-bold text-[14px]" style={{ marginLeft: "25px", color: "#a99cd4" }}>
+                          <div className="text-[14px] px-6 pb-0.5 pl-12" style={{ color: "#a99cd4", fontStyle: 'italic' }}>
                             {elementDescription(t, element)}
                           </div>
-                          <div className="text-[14px] pt-3 pb-1" style={{ paddingLeft: "10px", textIndent: "-0.5px", color: c }}>
-                            <div className="font-bold" style={{ color: c }}>
+                          <div className={`text-[${BODY_FONT_SIZE}] leading-snug pb-1 px-6 pl-12`} style={{ textIndent: '-1.2em' }}>
+                            <span className="font-bold" style={{ color: c, fontStyle: 'italic' }}>
                               {t("setup.surgeHeading", { label })}
-                            </div>
-                            <div style={{ color: "#a99cd4", paddingLeft: "15px" }}>{t("setup.surgeSentence", { article: article(label), surgeText: surgeText(t, element) })}</div>
+                            </span>
+                            <span style={{ color: "#a99cd4" }}> — {t("setup.surgeSentence", { article: article(label), surgeText: surgeText(t, element) })}</span>
                           </div>
                         </div>
                       )}
-                      <div className={`text-[${BODY_FONT_SIZE}] leading-snug py-1`} style={{ marginLeft: "21px" }}>
+                      <div className={`text-[${BODY_FONT_SIZE}] leading-snug py-1 px-6 pl-12`} style={{ textIndent: '-1.2em' }}>
                         <span className="font-bold" style={{ color: c }}>
                           {SIGNS[k].glyph} {signLabel(t, k)} · {signAbility(t, k)}
                         </span>

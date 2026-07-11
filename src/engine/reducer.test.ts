@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CANCER_SHIELD_TURN_LIMIT, DIRS, PATH_COMPLETE_TRACKER_REDUCTION_4P } from "../constants";
+import {
+  CANCER_SHIELD_TURN_LIMIT,
+  CHAIN_LENGTH_THRESHOLD,
+  CHAIN_TRACKER_BONUS_DISCOUNT,
+  CHAIN_TRACKER_DISCOUNT,
+  CHAIN_TRACKER_DISCOUNT_OWN,
+  DIRS,
+  PATH_COMPLETE_TRACKER_REDUCTION_4P
+} from "../constants";
 import type { Element, GameState, PlayerSetup, Sign, StarCard } from "../types";
 import { isValidShieldAnchor } from "./board";
 import { gameReducer, initGame } from "./reducer";
@@ -32,6 +40,14 @@ const cross = (element: StarCard["element"]): StarCard => ({
   element,
   connections: { top: true, right: true, bottom: true, left: true }
 });
+
+/** Mirrors reducer.ts's own chain-discount formula, for tests that need to assert against it
+ * without hardcoding a magic number that'll silently drift if the constants ever change. */
+function chainReduction(chainLength: number, ownElement: boolean): number {
+  const base = ownElement ? CHAIN_TRACKER_DISCOUNT_OWN : CHAIN_TRACKER_DISCOUNT;
+  const chainExtraLength = chainLength - CHAIN_LENGTH_THRESHOLD + 1;
+  return base + CHAIN_TRACKER_BONUS_DISCOUNT * chainExtraLength;
+}
 
 /** Clears any obstacle along the straight line from a node outward, `steps` tiles deep, so a
  * chain-building test isn't at the mercy of a randomly-placed asteroid/void/shooting star. */
@@ -104,7 +120,7 @@ function buildPathToCenterExceptLast(s: GameState, element: StarCard["element"])
 }
 
 describe("chain-of-3 Eclipse Tracker discount (same-element only, no wildcards)", () => {
-  it("triggers once (own element = -10%) the moment a same-element chain first reaches 3, not before", () => {
+  it("discounts the Tracker the moment a same-element chain reaches 3, then discounts further (own element = higher rate) as it keeps growing", () => {
     let s = freshGame(["ARIES", "CANCER"]);
     const node = s.nodes.FIRE;
     const [dx, dy] = DIRS[node.dir];
@@ -128,7 +144,8 @@ describe("chain-of-3 Eclipse Tracker discount (same-element only, no wildcards)"
     const beforeSeq = s.chainEventSeq;
     s.players[0].hand = [cross("FIRE")];
     s = gameReducer(s, { type: "PLACE", handIndex: 0, x: third.x, y: third.y });
-    expect(s.tracker).toBe(40); // -10% for reaching a 3-chain of the player's own element
+    const afterThird = 50 - chainReduction(3, true); // own element (Aries is Fire)
+    expect(s.tracker).toBe(afterThird);
     // "Start" is the chain tile closest to FIRE's own node (the first one placed here), "end" is
     // the tile that was just placed to cross the threshold.
     expect(s.chainEventSeq).toBe(beforeSeq + 1);
@@ -141,17 +158,18 @@ describe("chain-of-3 Eclipse Tracker discount (same-element only, no wildcards)"
     pos = third;
     s = gameReducer(s, { type: "MOVE", x: third.x, y: third.y });
 
-    // Extending an already-3+ chain further must NOT retrigger the Tracker discount — but it should
-    // still fire a fresh chain animation/event/message (just without a Tracker effect to report),
-    // since the visual celebration is decoupled from the one-time discount gate.
+    // Extending an already-3+ chain further keeps discounting the Tracker — at a bigger rate than
+    // the first discount, since the chain is now longer — not just re-firing the visual event.
     const fourth = { x: pos.x + dx, y: pos.y + dy };
     s.players[0].hand = [cross("FIRE")];
     s = gameReducer(s, { type: "PLACE", handIndex: 0, x: fourth.x, y: fourth.y });
-    expect(s.tracker).toBe(40); // extending an already-3+ chain must NOT retrigger the discount
-    expect(s.chainEventSeq).toBe(beforeSeq + 2); // but a new chain event still fires
+    const secondDiscount = chainReduction(4, true);
+    expect(secondDiscount).toBeGreaterThan(chainReduction(3, true));
+    expect(s.tracker).toBe(afterThird - secondDiscount);
+    expect(s.chainEventSeq).toBe(beforeSeq + 2); // a new chain event fires
     expect(s.lastChainEvent?.end).toEqual(fourth);
-    expect(s.log.some((l) => l.includes(`to (${fourth.x},${fourth.y})`) && l.includes("no further Eclipse Tracker effect"))).toBe(true);
-    expect(s.messageLog.some((l) => l.includes("no further Eclipse Tracker effect"))).toBe(true);
+    expect(s.log.some((l) => l.includes(`to (${fourth.x},${fourth.y})`) && l.includes("Eclipse Tracker eases by"))).toBe(true);
+    expect(s.messageLog.some((l) => l.includes("Eclipse Tracker eases by"))).toBe(true);
   });
 
   it("a corrupted card in the middle of the chain no longer breaks it — corruption doesn't disqualify counting anymore", () => {
@@ -189,7 +207,7 @@ describe("chain-of-3 Eclipse Tracker discount (same-element only, no wildcards)"
     // 3 physically-connected Fire cards, one of them corrupted, all still counted as one chain —
     // FIRE is active (Aries) but not the placing player's own element (Cancer), so the regular
     // (non-own) discount rate applies.
-    expect(s.tracker).toBe(45);
+    expect(s.tracker).toBe(50 - chainReduction(3, false));
   });
 
   it("a physically-bridged foreign-element card does NOT extend the chain or count toward it — no more wildcards", () => {
@@ -1009,7 +1027,12 @@ describe("4-player balance: completing a path eases the Eclipse Tracker", () => 
     // however many paths actually completed rather than hardcoding exactly one.
     const completions = s.log.filter((l) => l.includes("blazes into the Orrery")).length;
     expect(completions).toBeGreaterThanOrEqual(1);
-    expect(s.tracker).toBe(50 - completions * PATH_COMPLETE_TRACKER_REDUCTION_4P);
+    // The whole hand-built path is one long same-element FIRE chain, so this final placement also
+    // (realistically) triggers its own growing chain discount on top of the path-completion one —
+    // read the actual chain size the placement produced rather than assuming it away.
+    const chainSize = s.lastChainEvent?.tiles.length ?? 0;
+    const chainDiscount = chainSize >= CHAIN_LENGTH_THRESHOLD ? chainReduction(chainSize, true) : 0;
+    expect(s.tracker).toBe(50 - completions * PATH_COMPLETE_TRACKER_REDUCTION_4P - chainDiscount);
   });
 
   it("does not grant the path-completion tracker reduction in a 2-player game", () => {
@@ -1023,7 +1046,11 @@ describe("4-player balance: completing a path eases the Eclipse Tracker", () => 
     s = gameReducer(s, { type: "PLACE", handIndex: 0, x: target.x, y: target.y });
 
     expect(s.log.some((l) => l.includes("blazes into the Orrery"))).toBe(true);
-    expect(s.tracker).toBe(50);
+    // No path-completion bonus outside 4-player games — but the final placement still extends a
+    // long same-element chain, so the ordinary chain discount still applies on top of nothing here.
+    const chainSize = s.lastChainEvent?.tiles.length ?? 0;
+    const chainDiscount = chainSize >= CHAIN_LENGTH_THRESHOLD ? chainReduction(chainSize, true) : 0;
+    expect(s.tracker).toBe(50 - chainDiscount);
   });
 });
 

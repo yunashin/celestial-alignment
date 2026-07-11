@@ -26,9 +26,9 @@ export const MAX_HAND_SIZE = DEFAULT_HAND_SIZE + 2;
 export const ECLIPSE_CORRUPTION_PER_ELEMENT = 3;
 export const ECLIPSE_VOID_COUNT = 6;
 // Increases the tracker by this amount when a Corruption card is drawn
-export const ECLIPSE_CORRUPTION_TRACKER_BUMP = 1;
+export const ECLIPSE_CORRUPTION_TRACKER_BUMP = 3;
 // Increases the tracker by this amount when a Black Hole card is drawn
-export const ECLIPSE_VOID_TRACKER_BUMP = 2;
+export const ECLIPSE_VOID_TRACKER_BUMP = 3;
 // Each Surge card's base tracker-bump amount (before the 4-player scale-down and corruption
 // scaling below apply) — one card is dealt per entry, so this also implicitly sets the Surge card
 // count (6 here). Add/remove entries to change how many Surge cards are in the deck.
@@ -36,7 +36,7 @@ export const
   ECLIPSE_SURGE_AMOUNTS = {
     2: [10, 10, 15, 15, 15, 20, 20, 20, 25],
     3: [10, 10, 10, 15, 15, 15, 20, 20, 20],
-    4: [10, 10, 10, 10, 10, 15, 15, 15, 15],
+    4: [10, 10, 10, 10, 15, 15, 15, 15, 20],
   };
 // A Corruption/Void card that finds no legal target is a "wasted" card — it still nudges the
 // tracker up so the deck can't stall forever, but softer than a real hit (this number gets added to
@@ -90,8 +90,9 @@ export const CORRUPTION_DECAY_TURNS = 3;
 // A connected run of this many SAME-element Star Cards eases the Eclipse Tracker on the placement
 // that first reaches it — double the discount if that element is the placing player's own element.
 export const CHAIN_LENGTH_THRESHOLD = 3;
-export const CHAIN_TRACKER_DISCOUNT = 5;
-export const CHAIN_TRACKER_DISCOUNT_OWN = 10;
+export const CHAIN_TRACKER_DISCOUNT = 2;
+export const CHAIN_TRACKER_DISCOUNT_OWN = 4;
+export const CHAIN_TRACKER_BONUS_DISCOUNT = 2;
 
 // -- Asteroid cadence: how many hazard tiles start on the board and how often the traveling
 // asteroid relocates (lower interval = more frequent, more disruptive shifts) --
@@ -143,7 +144,7 @@ export const CENTER_ZONE_HEIGHT = 5;
 // pairs (e.g. AIR/WATER, which share the (0,0) corner) can otherwise land uncomfortably close, or
 // even on the exact same tile.
 export const MIN_NODE_SEPARATION = 4;
-export const ELEMENTS: Element[] = ["FIRE", "WATER", "EARTH", "AIR"];
+export const ELEMENTS: Element[] = ["AIR", "FIRE", "EARTH", "WATER"];
 
 // Single source of truth for each element's color — change a value here and every consumer
 // (ELEMENT_META below, card glyphs, node/path glow, chain highlighting, edge labels, etc.) picks
@@ -151,10 +152,10 @@ export const ELEMENTS: Element[] = ["FIRE", "WATER", "EARTH", "AIR"];
 // (rather than the old #5eb3ff sky-blue) since that read too similarly to Air's own pale
 // blue-gray (#e2e8f0) at a glance, especially once either gets lightened/blended (e.g. the win
 // glow's lerp toward Orrery white).
-export const FIRE_COLOR = "#ff00ff";
-export const WATER_COLOR = "#0095ff";
-export const EARTH_COLOR = "#3dd68c";
 export const AIR_COLOR = "#e2e8f0";
+export const FIRE_COLOR = "#ff00ff";
+export const EARTH_COLOR = "#3dd68c";
+export const WATER_COLOR = "#0095ff";
 
 // `soft` (a low-alpha wash used for node/tile backgrounds) is derived from the same hex constant
 // as `color` rather than a separately hand-typed rgba string, so the two can never drift apart.
@@ -164,25 +165,25 @@ const ELEMENT_SOFT_ALPHA = 0.12;
 // en.yaml/ko.yaml under `elements.<ELEMENT>` instead (see src/i18n/gameText.ts's elementLabel/
 // elementDescription helpers), not here, so it can vary by locale.
 export const ELEMENT_META: Record<Element, { color: string; soft: string; glyph: string }> = {
+  AIR: {
+    color: AIR_COLOR,
+    soft: hexToRgba(AIR_COLOR, ELEMENT_SOFT_ALPHA),
+    glyph: "\u{1F4A8}"
+  },
   FIRE: {
     color: FIRE_COLOR,
     soft: hexToRgba(FIRE_COLOR, ELEMENT_SOFT_ALPHA),
     glyph: "\u{1F525}"
-  },
-  WATER: {
-    color: WATER_COLOR,
-    soft: hexToRgba(WATER_COLOR, ELEMENT_SOFT_ALPHA),
-    glyph: "\u{1F4A7}"
   },
   EARTH: {
     color: EARTH_COLOR,
     soft: hexToRgba(EARTH_COLOR, ELEMENT_SOFT_ALPHA),
     glyph: "⛰️"
   },
-  AIR: {
-    color: AIR_COLOR,
-    soft: hexToRgba(AIR_COLOR, ELEMENT_SOFT_ALPHA),
-    glyph: "\u{1F4A8}"
+  WATER: {
+    color: WATER_COLOR,
+    soft: hexToRgba(WATER_COLOR, ELEMENT_SOFT_ALPHA),
+    glyph: "\u{1F4A7}"
   }
 };
 
@@ -220,18 +221,18 @@ export const DIR_KEYS: Dir[] = ["top", "right", "bottom", "left"];
 // signDesc helpers), not here, so it can vary by locale. `impl` is a dev-facing implementation-
 // status marker, never shown to players, so it stays here rather than in the translation files.
 export const SIGNS: Record<Sign, { glyph: string; element: Element; impl: "full" | "simplified" | "stub" }> = {
+  AQUARIUS: { glyph: "♒", element: "AIR", impl: "full" },
+  GEMINI: { glyph: "♊", element: "AIR", impl: "full" },
+  LIBRA: { glyph: "♎", element: "AIR", impl: "full" },
   ARIES: { glyph: "♈", element: "FIRE", impl: "full" },
   LEO: { glyph: "♌", element: "FIRE", impl: "full" },
   SAGITTARIUS: { glyph: "♐", element: "FIRE", impl: "full" },
-  CANCER: { glyph: "♋", element: "WATER", impl: "full" },
-  SCORPIO: { glyph: "♏", element: "WATER", impl: "full" },
-  PISCES: { glyph: "♓", element: "WATER", impl: "full" },
-  GEMINI: { glyph: "♊", element: "AIR", impl: "full" },
-  LIBRA: { glyph: "♎", element: "AIR", impl: "full" },
-  AQUARIUS: { glyph: "♒", element: "AIR", impl: "full" },
+  CAPRICORN: { glyph: "♑", element: "EARTH", impl: "full" },
   TAURUS: { glyph: "♉", element: "EARTH", impl: "full" },
   VIRGO: { glyph: "♍", element: "EARTH", impl: "full" },
-  CAPRICORN: { glyph: "♑", element: "EARTH", impl: "full" }
+  CANCER: { glyph: "♋", element: "WATER", impl: "full" },
+  PISCES: { glyph: "♓", element: "WATER", impl: "full" },
+  SCORPIO: { glyph: "♏", element: "WATER", impl: "full" }
 };
 
 // # of turns that Lunar Shield lasts after Cancer places a Water card on the board
@@ -250,4 +251,4 @@ export const SHAPE_CORNER: Connections = { top: true, right: true, bottom: false
 export const SHAPE_TEE: Connections = { top: true, right: true, bottom: false, left: true };
 export const SHAPE_CROSS: Connections = { top: true, right: true, bottom: true, left: true };
 
-export const DEFAULT_SIGNS: Sign[] = ["ARIES", "CANCER", "TAURUS", "GEMINI"];
+export const DEFAULT_SIGNS: Sign[] = ["AQUARIUS", "ARIES", "CAPRICORN", "CANCER"];

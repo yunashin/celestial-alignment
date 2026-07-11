@@ -128,7 +128,7 @@ howToPlay:
     asteroidProtection: "A <b>completed path</b> is permanently safe from the traveling asteroid."
     loopImmunity: "A <b>closed loop</b> of Star Cards — any shape that encloses an area — becomes permanently immune to both Corruption and the asteroid, whether or not it's part of a finished path."
     purifiedImmunity: "<b>Purifying</b> a Star Card makes it permanently immune to Corruption forever after, even if that path is never completed."
-    chainDiscount: "A <b>chain of {chainThreshold}+</b> connected Star Cards sharing the same element grants a one-time discount to the Eclipse Tracker the moment the chain first reaches that length — bigger if it's your own element."
+    chainDiscount: "A <b>chain of {chainThreshold}+</b> connected Star Cards sharing the same element grants a discount to the Eclipse Tracker the moment the chain reaches that length — bigger if it's your own element."
 
 signs:
   ARIES:
@@ -146,7 +146,7 @@ signs:
   CANCER:
     label: "Cancer"
     ability: "Lunar Shield"
-    desc: "When placing a Water Card, Guardians and Star Cards on or adjacent to your tile take no damage and are protected from asteroid strikes for 2 more of your turns, including your current turn."
+    desc: "First Water Card placed shields Guardians and Star Cards on or adjacent to your tile from all damage for 2 of your turns."
   SCORPIO:
     label: "Scorpio"
     ability: "Regeneration"
@@ -174,7 +174,7 @@ signs:
   VIRGO:
     label: "Virgo"
     ability: "Protective Precision"
-    desc: "Once per turn, shield a 2x2 area from all Eclipse effects and asteroid strikes. Unavailable again on your next turn; ready the turn after."
+    desc: "Once per turn, shield a 2x2 area from all Eclipse effects and asteroids. Charges and can't be used your next turn."
   CAPRICORN:
     label: "Capricorn"
     ability: "Terraform"
@@ -346,7 +346,6 @@ log:
   placeRebelWave: " — Rebel Wave rotates it into alignment"
   placeVanguard: " — Vanguard: 0 AP"
   chain: "🔗{glyph} {label} chain of {count} cards aligns from ({sx},{sy}) to ({ex},{ey})"
-  chainNoEffect: " — no further Eclipse Tracker effect."
   chainEased: " — Eclipse Tracker eases by {pct}%."
   airSurge: "💨💨💨 Air Surge 💨💨💨 {name} draws a free card."
   fireSurgeCleanse: "🔥🔥🔥 Fire Surge 🔥🔥🔥 Corruption at ({x},{y}) burns away."
