@@ -177,3 +177,8 @@ export type GameAction =
   | { type: "CONVERT_HAND_EARTH" }
   | { type: "DISCARD"; indices: number[] }
   | { type: "END_TURN" };
+
+export type RecommendedSeed = {
+  seed: string;
+  nickname: string;
+};
