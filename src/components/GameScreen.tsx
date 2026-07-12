@@ -648,8 +648,8 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             scrolling beneath but under Tooltip's portaled popups (z-50, unaffected either way since
             those escape to document.body). */}
         <div
-          className="rounded-lg shrink-0 md:hidden sticky top-0 z-20 px-1.5 py-1.5"
-          style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+          className="rounded-lg shrink-0 md:hidden sticky top-0 z-20 px-1.5 py-1.5 border"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)", borderColor: "#2a2340", animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
         >
           <EclipseTracker value={state.tracker} />
         </div>
