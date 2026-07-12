@@ -33,7 +33,7 @@ function EdgeLabel({
 
   return (
     <div
-      className={`absolute text-[${BODY_FONT_SIZE}] sm:text-xs font-bold tracking-[0.3em] uppercase whitespace-nowrap`}
+      className={`absolute text-[10px] sm:text-[16px] font-bold tracking-[0.3em] uppercase whitespace-nowrap`}
       style={{ color: meta.color, textShadow: `0 0 6px ${meta.color}`, writingMode: vertical ? "vertical-rl" : undefined, ...edgeStyle }}
     >
       {elementLabel(t, element)}
