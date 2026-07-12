@@ -582,7 +582,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           ~1/3 of the screen instead of letting this section grow into that space. `gap-1.5` (not
           `gap-2`) below `sm:` — every bit of vertical chrome above the board is space the board
           doesn't get. */}
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:overflow-visible">
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
