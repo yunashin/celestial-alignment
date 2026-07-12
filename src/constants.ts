@@ -1,4 +1,4 @@
-import type { Connections, DamageCardMeta, Dir, Element, PowerUp, Sign } from "./types";
+import type { Connections, DamageCardMeta, Dir, Element, PowerUp, RecommendedSeed, Sign } from "./types";
 import { hexToRgba } from "./utils/colors";
 
 // ============================================================================
@@ -256,3 +256,18 @@ export const DEFAULT_SIGNS: { [key: number]: Sign[] } = {
   3: ["SCORPIO", "AQUARIUS", "ARIES"],
   4: ["SCORPIO", "AQUARIUS", "ARIES", "CAPRICORN"]
 };
+
+export const RECOMMENDED_SEEDS: RecommendedSeed[] = [
+  {
+    seed: "7c971n7w",
+    nickname: "Cassiopeia"
+  },
+  {
+    seed: "q9a4jxda",
+    nickname: "Orion"
+  },
+  {
+    seed: "0mnqcrdo",
+    nickname: "Ursa Major"
+  },
+];

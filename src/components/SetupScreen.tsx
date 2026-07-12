@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BODY_FONT_SIZE, DEFAULT_SIGNS, ELEMENT_META, SIGNS } from "../constants";
+import { BODY_FONT_SIZE, DEFAULT_SIGNS, ELEMENT_META, RECOMMENDED_SEEDS, SIGNS } from "../constants";
 import { useTranslation } from "../i18n";
 import { elementDescription, elementLabel, signAbility, signDesc, signLabel, surgeText, type TFunc } from "../i18n/gameText";
 import type { PlayerSetup, Sign } from "../types";
@@ -28,6 +28,7 @@ const defaultSlots = (numSlots: 2 | 3 | 4): PlayerSetup[] => DEFAULT_SIGNS[numSl
 
 function FavoriteSeedRow({
   fav,
+  isFav = true,
   seed,
   t,
   onUse,
@@ -35,14 +36,16 @@ function FavoriteSeedRow({
   onRename
 }: {
   fav: FavoriteSeed;
+  isFav?: boolean;
   seed: string;
   t: TFunc;
   onUse: (seed: string) => void;
-  onRemove: (id: string) => void;
-  onRename: (id: string, nickname: string) => void;
+  onRemove?: (id: string) => void;
+  onRename?: (id: string, nickname: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(fav.nickname);
+  const isDefaultRecommendedSeed = Boolean(!onRename);
   const commit = () => {
     onRename(fav.id, draft);
     setEditing(false);
@@ -67,24 +70,24 @@ function FavoriteSeedRow({
           style={{ borderColor: "#5eb3ff", background: "#0b0914", color: "#f1eeff" }}
         />
       ) : (
-        <button type="button" onClick={() => onUse(fav.seed)} className="flex-1 min-w-0 text-left text-xs truncate" style={{ color: "#c084fc" }}>
-          <Tooltip text={t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="left">
-            ★ {fav.nickname}
-          </Tooltip>
-        </button>
+        <Tooltip className="flex-1 min-w-0 text-left text-xs truncate" text={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltip") : t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="left">
+          <button type="button" onClick={() => onUse(fav.seed)} className="w-full text-left" style={{ color: "#c084fc" }}>
+            {isFav ? "★" : "☆"} {fav.nickname} {isDefaultRecommendedSeed && "✦"}
+          </button>
+        </Tooltip>
       )}
-      {!editing && (
+      {!isDefaultRecommendedSeed && !editing && (
         <Tooltip text={t("setup.renameSeedTooltip")}>
-          <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-[10px] px-1" style={{ color: "#6d5f94" }} aria-label="Rename">
+          <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-xs px-1" style={{ color: "#c0b5de" }} aria-label="Rename">
             ✎
           </button>
         </Tooltip>
       )}
-      <Tooltip text={t("setup.removeSeedTooltip")}>
-        <button type="button" onClick={() => onRemove(fav.id)} className="shrink-0 text-[10px] px-1" style={{ color: "#6d5f94" }} aria-label="Remove favorite">
+      {onRemove && <Tooltip text={t("setup.removeSeedTooltip")}>
+        <button type="button" onClick={() => onRemove(fav.id)} className="shrink-0 text-xs px-1" style={{ color: "#c0b5de" }} aria-label="Remove favorite">
           ✕
         </button>
-      </Tooltip>
+      </Tooltip>}
     </div>
   );
 }
@@ -146,12 +149,18 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
 
   const trimmedSeed = seed.trim();
   const alreadyFavorited = favorites.some((f) => f.seed === trimmedSeed);
+  const removeFavorite = (id: string) => setFavorites(removeFavoriteSeed(id));
   const saveCurrentAsFavorite = () => {
     if (!trimmedSeed) return;
-    setFavorites(addFavoriteSeed(trimmedSeed));
+    const matchingSavedFavorite = favorites.find((f) => f.seed === trimmedSeed);
+    if (matchingSavedFavorite) {
+      removeFavorite(matchingSavedFavorite.id);
+    } else {
+      setFavorites(addFavoriteSeed(trimmedSeed));
+    }
   };
-  const removeFavorite = (id: string) => setFavorites(removeFavoriteSeed(id));
   const renameFavorite = (id: string, nickname: string) => setFavorites(renameFavoriteSeed(id, nickname));
+  const filteredFavorites = favorites.filter((f) => !RECOMMENDED_SEEDS.some((r) => r.seed === f.seed));
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-4 py-8 px-4">
@@ -235,11 +244,11 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                 style={{ borderColor: "#3b2d5e", background: "#0b0914", color: "#f1eeff" }}
                 placeholder={t("setup.boardSeedPlaceholder")}
               />
-              <Tooltip text={alreadyFavorited ? t("setup.alreadySavedTooltip") : t("setup.saveSeedTooltip")}>
+              <Tooltip text={alreadyFavorited ? t("setup.removeSeedTooltip") : t("setup.saveSeedTooltip")}>
                 <button
                   type="button"
                   onClick={saveCurrentAsFavorite}
-                  disabled={!trimmedSeed || alreadyFavorited}
+                  disabled={!trimmedSeed}
                   className="shrink-0 px-2 rounded border text-sm"
                   style={{
                     borderColor: alreadyFavorited ? "#ffd166" : "#3b2d5e",
@@ -251,11 +260,21 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                 </button>
               </Tooltip>
             </div>
-            {favorites.length > 0 && (
+            {filteredFavorites.length > 0 && (
               <div className="flex flex-col gap-1 mt-1">
-                {favorites.map((fav) => (
+                {filteredFavorites.map((fav) => (
                   <FavoriteSeedRow key={fav.id} fav={fav} seed={seed} t={t} onUse={setSeed} onRemove={removeFavorite} onRename={renameFavorite} />
                 ))}
+                {RECOMMENDED_SEEDS.length > 0 && (
+                  RECOMMENDED_SEEDS.map((recommendation) => {
+                    const recommendedSeed = recommendation.seed;
+                    const matchingSavedFavorite = favorites.find((f) => f.seed === recommendedSeed);
+                    const isFav = Boolean(matchingSavedFavorite);
+                    return (
+                      <FavoriteSeedRow key={recommendedSeed} fav={{ ...recommendation, id: isFav ? matchingSavedFavorite.id : recommendedSeed }} isFav={isFav} seed={seed} t={t} onUse={setSeed} onRemove={isFav ? removeFavorite : undefined} />
+                    )
+                  })
+                )}
               </div>
             )}
           </div>
