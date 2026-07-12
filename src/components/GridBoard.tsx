@@ -54,6 +54,7 @@ export function GridBoard({
   apCostTiles,
   cursorTile,
   rotated,
+  widthPriority,
   onTileClick
 }: {
   state: GameState;
@@ -75,13 +76,18 @@ export function GridBoard({
   // along with their real neighbors and stay visually connected — see TileView's own `rotated` doc
   // comment for how it counter-rotates everything EXCEPT the card connectors back upright.
   rotated?: boolean;
+  // See useFitSize's own doc comment — true on mobile (GameScreen passes its own `md:`-breakpoint-
+  // matching viewport check) so the board fills the full available WIDTH and derives its height
+  // from the aspect ratio, rather than being squeezed narrower by a height budget that a mobile
+  // wrapper with no fixed height can't meaningfully supply anyway.
+  widthPriority?: boolean;
   onTileClick: (x: number, y: number) => void;
 }) {
   // Swapping which axis is the "aspect width" vs "aspect height" (and which max-size cap applies to
   // which) is what makes the fitted box itself portrait-shaped when rotated — HEIGHT (11) becomes
   // the effective width and WIDTH (19) the effective height, matching the board's actual on-screen
   // footprint once rotated 90°.
-  const { ref, width, height } = useFitSize(rotated ? HEIGHT : WIDTH, rotated ? WIDTH : HEIGHT, rotated ? 720 : 1240, rotated ? 1240 : 720, 44);
+  const { ref, width, height } = useFitSize(rotated ? HEIGHT : WIDTH, rotated ? WIDTH : HEIGHT, rotated ? 720 : 1240, rotated ? 1240 : 720, 44, widthPriority);
 
   // Edge labels are positioned as a percentage of this outer wrapper's box, but a node tile's
   // center does NOT fall at a uniform (index / (WIDTH-1))*100 percentage of it — the inner grid

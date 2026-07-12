@@ -41,7 +41,7 @@ import {
   tracePathBetween
 } from "./board";
 import { computeLunarShieldTiles, damage, resolveEclipse } from "./eclipse";
-import { important, log, logGroup } from "./log";
+import { important, log, logGroup, trackerDelta } from "./log";
 import { getValidMoves, getValidPurifyTargets, handSize, placementCost, purifyCost, validPlacement } from "./rules";
 import { article, formatList, getKoreanArticle, pluralSuffix } from "../utils/grammar";
 import { hashStringToSeed, mulberry32, randomSeedString } from "../utils/rng";
@@ -164,9 +164,10 @@ function activateShootingStar(s: GameState, tile: Tile, p: Player) {
   s.lastShootingStarEvent = { type: type!, seq: s.shootingStarSeq };
   switch (type) {
     case "TRACKER_DOWN": {
+      const trackerBefore = s.tracker;
       s.tracker = Math.max(0, s.tracker - SHOOTING_STAR_TRACKER_DOWN_PCT);
       const msg = tr("log.shootingStarTrackerDown", { pct: SHOOTING_STAR_TRACKER_DOWN_PCT });
-      log(s, msg);
+      log(s, msg + trackerDelta(trackerBefore, s.tracker));
       important(s, msg);
       break;
     }
@@ -423,6 +424,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const chainExtraLength = chainAfter - CHAIN_LENGTH_THRESHOLD + 1;
         const reduction = (card.element === p.element ? CHAIN_TRACKER_DISCOUNT_OWN : CHAIN_TRACKER_DISCOUNT) + CHAIN_TRACKER_BONUS_DISCOUNT * chainExtraLength;
         const trackerPhrase = s.tracker === 0 ? tr("log.chainAlreadyDrained") : tr("log.chainEased", { pct: reduction });
+        const trackerBefore = s.tracker;
         s.tracker = Math.max(0, s.tracker - reduction);
         const glyph = ELEMENT_META[card.element].glyph;
         // Capped so a very long chain (e.g. one that also happens to complete a whole path) doesn't
@@ -431,7 +433,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const chainMsg =
           tr("log.chain", { glyph: glyphMsg, label: elementLabel(tr, card.element), count: chainAfter, sx: chainStart.x, sy: chainStart.y, ex: chainEnd.x, ey: chainEnd.y }) +
           trackerPhrase;
-        log(s, chainMsg);
+        log(s, chainMsg + trackerDelta(trackerBefore, s.tracker));
         important(s, chainMsg);
       }
       if (card.element === p.element) {
@@ -500,13 +502,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           // than 2-3 player games racing the same Eclipse Tracker — completing any one path there
           // eases the tracker as a direct balance offset (see ECLIPSE_EFFECT_SCALE_4P's comment).
           let msg = tr("log.pathComplete", { label: elementLabel(tr, el) });
+          const trackerBefore = s.tracker;
           if (s.players.length === 4) {
             s.tracker = Math.max(0, s.tracker - PATH_COMPLETE_TRACKER_REDUCTION_4P);
             if (PATH_COMPLETE_TRACKER_REDUCTION_4P) {
               msg += tr("log.pathCompleteTrackerEase", { pct: PATH_COMPLETE_TRACKER_REDUCTION_4P });
             }
           }
-          log(s, msg);
+          log(s, msg + trackerDelta(trackerBefore, s.tracker));
           important(s, msg);
         }
       }

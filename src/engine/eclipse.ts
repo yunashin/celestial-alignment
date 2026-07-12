@@ -1,7 +1,7 @@
 import { CORRUPTION_DECAY_TURNS, DIRS, DIR_KEYS, ECLIPSE_EFFECT_SCALE_4P, ECLIPSE_NO_TARGET_TRACKER_BUMP, ECLIPSE_SURGE_CORRUPTION_SCALING, ELEMENT_META, ELEMENTS, HAZARD_DAMAGE, ECLIPSE_VOID_TRACKER_BUMP, ECLIPSE_CORRUPTION_TRACKER_BUMP } from "../constants";
 import type { GameState, Player } from "../types";
 import { computeNetwork, inBounds, isPathComplete, key, manhattan, shuffle } from "./board";
-import { fmtNum, important, log, logGroup } from "./log";
+import { fmtNum, important, log, logGroup, trackerDelta } from "./log";
 import { pluralSuffix } from "../utils/grammar";
 // Aliased to `tr` (not `t`) — this file uses `t` extensively as a local Tile variable name (e.g.
 // `for (const t of row)`), which would otherwise shadow the translate function.
@@ -106,9 +106,10 @@ export function resolveEclipse(s: GameState) {
       const t = targets[Math.floor(Math.random() * targets.length)];
       t.isCorrupted = true;
       t.corruptionTurnsLeft = CORRUPTION_DECAY_TURNS;
+      const trackerBefore = s.tracker;
       s.tracker = s.tracker + ECLIPSE_CORRUPTION_TRACKER_BUMP;
       const msg = tr("log.corruptionSeize", { glyph: ELEMENT_META[c.element!].glyph, label: elementLabel(tr, c.element!), x: t.x, y: t.y, pct: ECLIPSE_CORRUPTION_TRACKER_BUMP });
-      log(s, msg);
+      log(s, msg + trackerDelta(trackerBefore, s.tracker));
       important(s, msg);
       emitEvent(t.x, t.y);
       for (const p of s.players) {
@@ -116,9 +117,10 @@ export function resolveEclipse(s: GameState) {
       }
     } else {
       const bump = ECLIPSE_NO_TARGET_TRACKER_BUMP * eclipseEffectScale(s);
+      const trackerBefore = s.tracker;
       s.tracker = Math.min(100, s.tracker + bump);
       const msg = tr("log.corruptionNoTarget", { label: elementLabel(tr, c.element!), pct: fmtNum(bump) });
-      log(s, msg);
+      log(s, msg + trackerDelta(trackerBefore, s.tracker));
       important(s, msg);
       emitEvent(null, null);
     }
@@ -130,9 +132,10 @@ export function resolveEclipse(s: GameState) {
     if (empties.length) {
       const t = empties[Math.floor(Math.random() * empties.length)];
       t.isVoid = true;
+      const trackerBefore = s.tracker;
       s.tracker = s.tracker + ECLIPSE_VOID_TRACKER_BUMP;
       const msg = tr("log.voidForms", { x: t.x, y: t.y, pct: ECLIPSE_VOID_TRACKER_BUMP });
-      log(s, msg);
+      log(s, msg + trackerDelta(trackerBefore, s.tracker));
       important(s, msg);
       emitEvent(t.x, t.y);
       for (const p of s.players) {
@@ -140,9 +143,10 @@ export function resolveEclipse(s: GameState) {
       }
     } else {
       const bump = ECLIPSE_NO_TARGET_TRACKER_BUMP * eclipseEffectScale(s);
+      const trackerBefore = s.tracker;
       s.tracker = Math.min(100, s.tracker + bump);
       const msg = tr("log.voidNoSpace", { pct: fmtNum(bump), total: fmtNum(s.tracker) });
-      log(s, msg);
+      log(s, msg + trackerDelta(trackerBefore, s.tracker));
       important(s, msg);
       emitEvent(null, null);
     }
@@ -151,11 +155,12 @@ export function resolveEclipse(s: GameState) {
     for (const row of s.tiles) for (const t of row) if (t.isCorrupted) corrupted++;
     const scaling = ECLIPSE_SURGE_CORRUPTION_SCALING * corrupted;
     const amt = (c.amount! + scaling) * eclipseEffectScale(s);
+    const trackerBefore = s.tracker;
     s.tracker = Math.min(100, s.tracker + amt);
     const msg =
       tr("log.eclipseSurge", { amt: fmtNum(amt) }) +
       (corrupted ? tr("log.eclipseSurgeScaling", { pct: fmtNum(scaling * eclipseEffectScale(s)), count: corrupted, plural: pluralSuffix(corrupted) }) : ".");
-    log(s, msg);
+    log(s, msg + trackerDelta(trackerBefore, s.tracker));
     important(s, msg);
     emitEvent(null, null);
   } else {
