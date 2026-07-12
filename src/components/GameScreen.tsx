@@ -649,7 +649,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             those escape to document.body). */}
         <div
           className="rounded-lg shrink-0 md:hidden sticky top-0 z-20 px-1.5 py-1.5"
-          style={{ backdropFilter: "blur(4px)", animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+          style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
         >
           <EclipseTracker value={state.tracker} />
         </div>
