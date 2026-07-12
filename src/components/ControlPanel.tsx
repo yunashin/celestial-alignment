@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BODY_FONT_SIZE, ELEMENT_META, SHOOTING_STAR_SELF_HEAL_AMOUNT, SIGNS } from "../constants";
 import { canConvertHandEarth, canPurify, canScorpioHeal, canSelfHeal, canUseVirgoShield, hasAnyAction, purifyDisabledReason } from "../engine/rules";
 import { useTranslation } from "../i18n";
@@ -109,6 +109,23 @@ export function ControlPanel({
     }
     : {};
   const usedTaurus = p.sign === "TAURUS" && !state.taurusPurifyUsed;
+  const rosterRef = useRef<HTMLDivElement>(null);
+  // Fires once on the rising edge of "heal mode armed with a card selected" (not on every render
+  // where it stays true, and not again if the user manually navigates away and back) — jumps to
+  // the Guardian tab if the roster isn't currently visible (it only renders under "status"), then
+  // focuses the first eligible heal target so a keyboard player doesn't have to Tab all the way
+  // down to the roster themselves.
+  const prevHealTargetingRef = useRef(false);
+  useEffect(() => {
+    const justStarted = isScorpioHealTargeting && !prevHealTargetingRef.current;
+    prevHealTargetingRef.current = isScorpioHealTargeting;
+    if (!justStarted) return;
+    setTab("status");
+    const id = requestAnimationFrame(() => {
+      rosterRef.current?.querySelector<HTMLButtonElement>("button:not(:disabled)")?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isScorpioHealTargeting]);
 
   return (
     <div
@@ -244,7 +261,7 @@ export function ControlPanel({
             </div>
           </div>
 
-          <div className={`flex flex-col gap-1.5 ${isScorpioHealTargeting ? "rounded border" : ""}`} style={scorpioHealTargetingStyle}>
+          <div ref={rosterRef} className={`flex flex-col gap-1.5 ${isScorpioHealTargeting ? "rounded border" : ""}`} style={scorpioHealTargetingStyle}>
             {state.players.map((q) => {
               const c = ELEMENT_META[q.element].color;
               const isActive = q.id === state.players[state.active].id;

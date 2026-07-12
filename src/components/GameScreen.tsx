@@ -14,6 +14,7 @@ import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
+import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SeedDisplay } from "./SeedDisplay";
 import { StatusMessage } from "./StatusMessage";
@@ -54,6 +55,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const [statusBatch, setStatusBatch] = useState<{ id: number; messages: string[] }>({ id: 0, messages: [] });
   const [boardCursor, setBoardCursor] = useState<{ x: number; y: number } | null>(null);
   const active = state.players[state.active];
+  // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
+  // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
+  // one is the whole-board 90° layout rotation for narrow/portrait viewports (see GridBoard).
+  const boardRotated = useIsPortraitViewport();
 
   // A fresh turn starts the keyboard board-cursor over: the previous player's arrow-key position
   // isn't a meaningful default for whoever's turn it is now. Also clears once the game leaves
@@ -465,10 +470,22 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           setBoardCursor((prev) => {
             const base = prev ?? { x: p.position.x, y: p.position.y };
             let { x, y } = base;
-            if (k === "arrowup") x -= 1;
-            else if (k === "arrowdown") x += 1;
-            else if (k === "arrowleft") y -= 1;
-            else if (k === "arrowright") y += 1;
+            // A rotated board (see GridBoard/boardRotated) visually swaps which data axis reads as
+            // "up/down" vs "left/right" on screen — WATER (y=0) is now the top edge and EARTH
+            // (x=HEIGHT-1) the left edge, not AIR (x=0)/WATER (y=0) as in the unrotated layout — so
+            // the arrow keys need the matching remap to keep moving the cursor the way it visually
+            // points, instead of silently stepping "up" sideways once the board is rotated.
+            if (boardRotated) {
+              if (k === "arrowup") y -= 1;
+              else if (k === "arrowdown") y += 1;
+              else if (k === "arrowleft") x += 1;
+              else if (k === "arrowright") x -= 1;
+            } else {
+              if (k === "arrowup") x -= 1;
+              else if (k === "arrowdown") x += 1;
+              else if (k === "arrowleft") y -= 1;
+              else if (k === "arrowright") y += 1;
+            }
             return { x: Math.max(0, Math.min(HEIGHT - 1, x)), y: Math.max(0, Math.min(WIDTH - 1, y)) };
           });
           break;
@@ -509,10 +526,19 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview]);
+  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated]);
 
   return (
-    <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 overflow-hidden">
+    // `min-h-dvh` (not a fixed `h-dvh`) below `md:` — a short mobile viewport (many stock phone
+    // sizes, not just extreme ones: the board could shrink to a barely-visible sliver here before
+    // this fix) genuinely doesn't have room for the header + deck tray + board + hand panel +
+    // full-height ControlPanel all at once, since ControlPanel never shrinks or scrolls on mobile
+    // (ControlPanel's own `md:overflow-y-auto` is desktop-only by design — see its own comments).
+    // Letting this root grow past one viewport height instead of clipping (`overflow-hidden`) means
+    // the ALREADY-`overflow-y-auto` ancestor in App.tsx just scrolls the whole page on mobile,
+    // exactly like most stacked-layout mobile UIs — desktop is completely unaffected (`md:h-dvh
+    // md:overflow-hidden` restores the original fixed, no-page-scroll behavior there).
+    <div className="w-full min-h-dvh md:h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 md:overflow-hidden">
       <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-3">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
@@ -565,7 +591,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
         {state.phase === "won" && <WinBanner onReset={doBack} />}
 
-        <div ref={boardWrapRef} className="flex-1 min-h-0 flex items-center justify-center">
+        {/* `min-h-[280px]` keeps the board itself from being squeezed down to an unusably tiny
+            sliver on a short mobile viewport, now that the page can scroll (see the root div's own
+            comment above) instead of everything having to cram into exactly one viewport height. */}
+        <div ref={boardWrapRef} className="flex-1 min-h-[280px] flex items-center justify-center">
           <GridBoard
             state={state}
             highlights={highlights}
@@ -578,6 +607,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             cardPreview={cardPreview}
             apCostTiles={apCostTiles}
             cursorTile={boardCursor}
+            rotated={boardRotated}
             onTileClick={onTileClick}
           />
         </div>

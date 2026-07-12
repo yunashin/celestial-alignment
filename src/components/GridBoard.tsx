@@ -53,6 +53,7 @@ export function GridBoard({
   cardPreview,
   apCostTiles,
   cursorTile,
+  rotated,
   onTileClick
 }: {
   state: GameState;
@@ -66,9 +67,21 @@ export function GridBoard({
   cardPreview?: { connections: Connections; color: string };
   apCostTiles?: Map<string, { cost: number; tooltip: string }>;
   cursorTile?: { x: number; y: number } | null;
+  // Visually rotates the board 90° clockwise for narrow/portrait viewports (see
+  // useIsPortraitViewport) — a pure presentation change, the underlying WIDTH x HEIGHT tile data
+  // and node/edge assignments are untouched. Achieved by rotating the whole (unchanged) grid as a
+  // rigid CSS transform rather than remapping grid-row/grid-column per tile, so every tile's own
+  // connector shapes (drawn via logical top/right/bottom/left in CardGlyph) automatically rotate
+  // along with their real neighbors and stay visually connected — see TileView's own `rotated` doc
+  // comment for how it counter-rotates everything EXCEPT the card connectors back upright.
+  rotated?: boolean;
   onTileClick: (x: number, y: number) => void;
 }) {
-  const { ref, width, height } = useFitSize(WIDTH, HEIGHT, 1240, 720, 44);
+  // Swapping which axis is the "aspect width" vs "aspect height" (and which max-size cap applies to
+  // which) is what makes the fitted box itself portrait-shaped when rotated — HEIGHT (11) becomes
+  // the effective width and WIDTH (19) the effective height, matching the board's actual on-screen
+  // footprint once rotated 90°.
+  const { ref, width, height } = useFitSize(rotated ? HEIGHT : WIDTH, rotated ? WIDTH : HEIGHT, rotated ? 720 : 1240, rotated ? 1240 : 720, 44);
 
   // Edge labels are positioned as a percentage of this outer wrapper's box, but a node tile's
   // center does NOT fall at a uniform (index / (WIDTH-1))*100 percentage of it — the inner grid
@@ -90,11 +103,16 @@ export function GridBoard({
         const r = el.getBoundingClientRect();
         return axis === "horizontal" ? ((r.left + r.width / 2 - box.left) / box.width) * 100 : ((r.top + r.height / 2 - box.top) / box.height) * 100;
       };
+      // A rotated board keeps measuring the SAME tiles' real (now-rotated) rendered positions — the
+      // measurement itself needs no rotation-specific logic — but AIR/EARTH move from the top/bottom
+      // edges (whose label position varies along the horizontal axis) to the right/left edges
+      // (varies along the vertical axis) instead, and WATER/FIRE do the reverse; see the `edge`
+      // props below for the full rotated mapping.
       setEdgePercents((prev) => ({
-        air: centerPercent(state.nodes.AIR.x, state.nodes.AIR.y, "horizontal") ?? prev.air,
-        earth: centerPercent(state.nodes.EARTH.x, state.nodes.EARTH.y, "horizontal") ?? prev.earth,
-        water: centerPercent(state.nodes.WATER.x, state.nodes.WATER.y, "vertical") ?? prev.water,
-        fire: centerPercent(state.nodes.FIRE.x, state.nodes.FIRE.y, "vertical") ?? prev.fire
+        air: centerPercent(state.nodes.AIR.x, state.nodes.AIR.y, rotated ? "vertical" : "horizontal") ?? prev.air,
+        earth: centerPercent(state.nodes.EARTH.x, state.nodes.EARTH.y, rotated ? "vertical" : "horizontal") ?? prev.earth,
+        water: centerPercent(state.nodes.WATER.x, state.nodes.WATER.y, rotated ? "horizontal" : "vertical") ?? prev.water,
+        fire: centerPercent(state.nodes.FIRE.x, state.nodes.FIRE.y, rotated ? "horizontal" : "vertical") ?? prev.fire
       }));
     };
     measure();
@@ -102,20 +120,39 @@ export function GridBoard({
     ro.observe(container);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, height, state.nodes]);
+  }, [width, height, state.nodes, rotated]);
 
   return (
     <div ref={ref} className="relative mx-auto" style={{ width, height }}>
-      <EdgeLabel element="AIR" edge="top" percent={edgePercents.air} />
-      <EdgeLabel element="EARTH" edge="bottom" percent={edgePercents.earth} />
-      <EdgeLabel element="WATER" vertical edge="left" percent={edgePercents.water} />
-      <EdgeLabel element="FIRE" vertical edge="right" percent={edgePercents.fire} />
+      {/* A 90° clockwise rotation shifts every edge one position clockwise: AIR (top) → right,
+          FIRE (right) → bottom, EARTH (bottom) → left, WATER (left) → top. `vertical` (which
+          switches the label to sideways `writing-mode: vertical-rl` text) flips along with it —
+          AIR/EARTH need it once they're on a left/right edge, WATER/FIRE stop needing it once
+          they're on a top/bottom edge. */}
+      <EdgeLabel element="AIR" edge={rotated ? "right" : "top"} vertical={rotated} percent={edgePercents.air} />
+      <EdgeLabel element="EARTH" edge={rotated ? "left" : "bottom"} vertical={rotated} percent={edgePercents.earth} />
+      <EdgeLabel element="WATER" vertical={!rotated} edge={rotated ? "top" : "left"} percent={edgePercents.water} />
+      <EdgeLabel element="FIRE" vertical={!rotated} edge={rotated ? "bottom" : "right"} percent={edgePercents.fire} />
 
+      {/* The grid itself is NEVER remapped internally — same WIDTH x HEIGHT tile order, same
+          gridTemplateColumns/Rows as always. Rotation is achieved by physically rotating this
+          whole (unchanged) grid 90° as a rigid CSS transform, so every tile's connector shapes
+          rotate right along with their real neighbors and stay visually attached — the
+          alternative (remapping which grid-row/grid-column each tile lands in) would leave card
+          connectors pointing at the wrong screen edge relative to where their neighbor actually
+          ended up. When rotated, the grid's own box is sized to the pre-rotation (swapped)
+          dimensions and centered + rotated within the wrapper via `translate(-50%,-50%)
+          rotate(90deg)`, so its rotated bounding box exactly fills the wrapper's (already
+          portrait-shaped, from useFitSize above) box. */}
       <div
-        className="grid gap-0.5 sm:gap-1 p-1.5 sm:p-2.5 rounded-xl border w-full h-full"
+        className="grid gap-0.5 sm:gap-1 p-1.5 sm:p-2.5 rounded-xl border"
         style={{
           gridTemplateColumns: `repeat(${WIDTH}, 1fr)`,
           gridTemplateRows: `repeat(${HEIGHT}, 1fr)`,
+          position: "absolute",
+          ...(rotated
+            ? { width: height, height: width, top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(90deg)" }
+            : { inset: 0 }),
           borderColor: "#3b2d5e",
           background: "rgba(11,9,20,0.7)",
           boxShadow: "0 0 24px rgba(124,58,237,0.15), inset 0 0 40px rgba(0,0,0,0.5)"
@@ -146,6 +183,7 @@ export function GridBoard({
                 apCostBadge={apCostTiles?.get(k)}
                 corruptionTotalTurns={corruptionTotalTurns}
                 cursorFocused={cursorFocused}
+                rotated={rotated}
                 lit={lit}
                 glow={tileGlow}
                 activeId={state.players[state.active].id}
