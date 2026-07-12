@@ -55,6 +55,14 @@ export function saveLastSetup(count: number, setup: PlayerSetup[]) {
   safeSet(COUNT_KEY, String(count));
 }
 
+/** Drops the saved names/signs for one player count only — the other counts' saved setups (and
+ * the seed/favorites, which are unrelated to "players for this game mode") are left untouched. */
+export function clearLastSetup(count: number) {
+  const all = loadLastSetups();
+  delete all[count];
+  safeSet(SETUPS_KEY, JSON.stringify(all));
+}
+
 /** Whatever the player last typed into the Board Seed field (including blank, for "random") —
  * prefilled on the next visit to the setup screen, same spirit as loadLastSetups above but for the
  * seed field specifically. Saved on every game start, not just when a favorite is involved. */

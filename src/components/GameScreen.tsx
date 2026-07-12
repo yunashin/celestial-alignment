@@ -11,6 +11,7 @@ import { ApBadge } from "./ApBadge";
 import { CardHand } from "./CardHand";
 import { ControlPanel } from "./ControlPanel";
 import { DeckTray } from "./DeckTray";
+import { EclipseTracker } from "./EclipseTracker";
 import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
@@ -56,6 +57,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const [surgeTile, setSurgeTile] = useState<{ x: number; y: number } | null>(null);
   const [statusBatch, setStatusBatch] = useState<{ id: number; messages: string[] }>({ id: 0, messages: [] });
   const [boardCursor, setBoardCursor] = useState<{ x: number; y: number } | null>(null);
+  // Mobile-only D-pad drawer — defaults open (the board cursor is the only way to place/move via
+  // touch without tapping tiles directly), but collapsible so a player who prefers tapping the
+  // board itself can slide it away to free that space for the scrollable top pane above.
+  const [dpadVisible, setDpadVisible] = useState(false);
   const active = state.players[state.active];
   // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
   // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
@@ -561,22 +566,23 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated]);
 
   return (
-    // `min-h-dvh` (not a fixed `h-dvh`) below `md:` — a short mobile viewport (many stock phone
-    // sizes, not just extreme ones: the board could shrink to a barely-visible sliver here before
-    // this fix) genuinely doesn't have room for the header + deck tray + board + hand panel +
-    // full-height ControlPanel all at once, since ControlPanel never shrinks or scrolls on mobile
-    // (ControlPanel's own `md:overflow-y-auto` is desktop-only by design — see its own comments).
-    // Letting this root grow past one viewport height instead of clipping (`overflow-hidden`) means
-    // the ALREADY-`overflow-y-auto` ancestor in App.tsx just scrolls the whole page on mobile,
-    // exactly like most stacked-layout mobile UIs — desktop is completely unaffected (`md:h-dvh
-    // md:overflow-hidden` restores the original fixed, no-page-scroll behavior there).
-    <div className="w-full min-h-dvh md:h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 md:overflow-hidden">
-      {/* `gap-1.5` (not `gap-2`) below `sm:` — every bit of vertical chrome above the hand panel on
-          mobile is space the board doesn't get, since (per the board wrapper's own comment below)
-          this section's total content already exceeds one viewport height on a short phone, so
-          `flex-1`/`min-h` on the board is mostly just picking its own floor rather than genuinely
-          growing into leftover space. */}
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3">
+    // Fixed `h-dvh` + `overflow-hidden` on ALL breakpoints now (not just `md:`) — mobile used to let
+    // this root grow past one viewport and rely on App.tsx's ancestor `overflow-y-auto` to scroll
+    // the whole page, but the layout below is now a two-pane split instead: a top pane (header,
+    // status/deck tray, D-pad, board) and a bottom pane (hand panel, Eclipse Tracker, action
+    // buttons, ControlPanel) each own their own internal scroll, pinned to roughly the top-2/3 and
+    // bottom-1/3 of the screen respectively, rather than the whole page scrolling as one unit. This
+    // means the bottom controls stay reachable within a fixed-size strip regardless of how tall the
+    // board gets (see the board wrapper's own `widthPriority` comment), while the top pane can still
+    // be scrolled on its own to reach the board's bottom edge if it's taller than its 2/3 share.
+    <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 overflow-hidden">
+      {/* TOP PANE: header, status/deck tray, win banner, D-pad, board. `overflow-y-auto` (mobile
+          only — desktop reverts to its original non-scrolling natural sizing) is what keeps the
+          board's bottom edge reachable even though the bottom pane below permanently claims its own
+          ~1/3 of the screen instead of letting this section grow into that space. `gap-1.5` (not
+          `gap-2`) below `sm:` — every bit of vertical chrome above the board is space the board
+          doesn't get. */}
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:overflow-visible">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
@@ -632,6 +638,22 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           />
         </div>
 
+        {/* Mobile-only copy of the Eclipse Tracker — see ControlPanel's own copy (now `hidden
+            md:block`) for why this is a second live render of the same component rather than the
+            desktop one repositioned via CSS. `sticky top-0` (mobile only — this whole block is
+            `md:hidden`) pins it to the top of the TOP PANE's own scroll container once the page is
+            scrolled past it, rather than letting it scroll away with the header above the board — a
+            solid-ish background is needed here since, once stuck, the board scrolls underneath it
+            and would otherwise show through. `z-20` keeps it above the board/win-banner content
+            scrolling beneath but under Tooltip's portaled popups (z-50, unaffected either way since
+            those escape to document.body). */}
+        <div
+          className="rounded-lg shrink-0 md:hidden sticky top-0 z-20 px-1.5 py-1.5"
+          style={{ background: "rgba(11,9,20,0.95)", backdropFilter: "blur(4px)", animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+        >
+          <EclipseTracker value={state.tracker} />
+        </div>
+
         {state.phase === "won" && <WinBanner onReset={doBack} />}
 
         {/* Below `md:` (mobile), no min-height/flex-grow drives this box at all — `widthPriority`
@@ -669,74 +691,38 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             onTileClick={onTileClick}
           />
         </div>
+      </div>
 
-        {/* Mobile-only D-pad, occupying the hand panel's usual spot so it reads as the same kind of
-            control surface — same outer card styling as the hand panel just below it, minus the
-            header, with each button sized/shaped exactly like a Star Card in hand (see CardHand's
-            own button className). The 4 arrows drive the same `moveBoardCursor` the arrow keys use,
-            remapped for `boardRotated` the same way, so a tap always moves the cursor the direction
-            it visually points regardless of board orientation. The 5th button (right of ▶, visually
-            set apart in cyan) is the touch equivalent of Enter/Space — activates whatever tile the
-            cursor is currently on, exactly like the keyboard does. */}
-        <div className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
-          <div className="flex gap-2 sm:gap-3 justify-center">
-            {(
-              [
-                { dir: "left", glyph: "◀" },
-                { dir: "up", glyph: "▲" },
-                { dir: "down", glyph: "▼" },
-                { dir: "right", glyph: "▶" }
-              ] as const
-            ).map(({ dir, glyph }) => (
-              <button
-                key={dir}
-                onClick={() => moveBoardCursor(dir)}
-                aria-label={t(`gameScreen.boardCursor${dir[0].toUpperCase()}${dir.slice(1)}`)}
-                className="relative w-14 h-[4.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
-                style={{
-                  borderColor: "#3b2d5e",
-                  background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
-                  boxShadow: "0 0 6px #3b2d5e55",
-                  color: "#a99cd4"
-                }}
-              >
-                {glyph}
-              </button>
-            ))}
-            <button
-              onClick={selectBoardCursor}
-              disabled={!boardCursor}
-              aria-label={t("gameScreen.boardCursorSelect")}
-              className="relative w-14 h-[4.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
-              style={{
-                borderColor: boardCursor ? "#5eb3ff" : "#3b2d5e",
-                background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
-                boxShadow: boardCursor ? "0 0 10px #5eb3ff88" : "none",
-                color: boardCursor ? "#5eb3ff" : "#3b2d5e",
-                opacity: boardCursor ? 1 : 0.5,
-                cursor: boardCursor ? "pointer" : "not-allowed"
-              }}
-            >
-              ✓
-            </button>
-          </div>
-        </div>
+      {/* Desktop hand column — unchanged from before, still its own sidebar between the board
+          column and ControlPanel. Placed here (before the bottom pane in DOM order) so that once
+          the bottom pane "dissolves" via `md:contents` below, this still visually precedes
+          ControlPanel exactly like it always has. */}
+      <div
+        ref={handDesktopRef}
+        className="hidden md:flex md:flex-col md:w-24 shrink-0 rounded-xl border p-2 gap-2"
+        style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
+      >
+        <span className={`text-[12px] font-bold tracking-widest uppercase text-center leading-snug`} style={{ color: "#6d5f94" }}>
+          {mode !== 'discard' && mode !== 'scorpioHeal' && <ApBadge cost="1" color="#6d5f94" />}
+          {mode === "discard" ? t("gameScreen.tapToDiscard") : mode === "scorpioHeal" ? t("gameScreen.pickACard") : t("gameScreen.tapToChannel")}
+        </span>
+        <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
+      </div>
 
-        <div
-          ref={handMobileRef}
-          className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden"
-          style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
-        >
-          <div className={`text-[10px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase text-center mb-1 sm:mb-2`} style={{ color: "#6d5f94" }}>
-            {mode === "discard" ? t("gameScreen.handHeaderDiscard", { name: active.name }) : t("gameScreen.handHeaderChannel", { name: active.name })}
-          </div>
-          <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
-        </div>
+      <hr className="md:hidden" style={{ borderColor: "#3b2d5e" }} />
 
-        {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn), positioned below the
-            hand panel — see ActionButtons' own doc comment for why this is a second live copy
-            rather than the desktop one repositioned via CSS alone (ControlPanel's own copy is
-            `hidden md:block`, the mirror image of this `md:hidden`). */}
+      {/* BOTTOM PANE: everything below the board — hand panel, Eclipse Tracker, action buttons,
+          ControlPanel (tabs/status card/roster) — pinned to roughly the bottom 1/3 of the screen on
+          mobile and scrollable internally there as ONE continuous region, instead of the page
+          scrolling as a whole. `md:contents` makes this wrapper itself disappear from the box model
+          at `md:` — its children (all individually `md:hidden` except the ControlPanel wrapper) then
+          fall back into the root's row layout exactly where ControlPanel already sat before this
+          change, restoring the original 3-column desktop layout untouched. */}
+      <div className="shrink-0 h-[30dvh] md:h-auto flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:contents">
+        {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn) — see ActionButtons'
+            own doc comment for why this is a second live copy rather than the desktop one
+            repositioned via CSS alone (ControlPanel's own copy is `hidden md:block`, the mirror
+            image of this `md:hidden`). */}
         <div className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
           <ActionButtons
             state={state}
@@ -752,38 +738,115 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             healTargeting={healTargeting}
           />
         </div>
+
+        <div
+          ref={handMobileRef}
+          className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden"
+          style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
+        >
+          <div className={`text-[10px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase text-center mb-1 sm:mb-2`} style={{ color: "#6d5f94" }}>
+            {mode === "discard" ? t("gameScreen.handHeaderDiscard", { name: active.name }) : t("gameScreen.handHeaderChannel", { name: active.name })}
+          </div>
+          <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
+        </div>
+
+        <div className="w-full md:w-72 shrink-0 md:overflow-y-auto">
+          <ControlPanel
+            state={state}
+            mode={mode}
+            discardCount={discardSel.size}
+            onMode={setUiMode}
+            onConfirmDiscard={doConfirmDiscard}
+            onEndTurn={requestEndTurn}
+            onConvertHandEarth={doConvertHandEarth}
+            healTargeting={healTargeting}
+            onPlayerHeal={onPlayerHeal}
+            showRotate={showRotate}
+            onRotate={onRotateCard}
+            shieldPreviewActive={mode === "virgoShield" && shieldPreview !== null}
+            starFlash={starFlash}
+            shieldFlashPlayerId={shieldFlashPlayerId}
+            selfHealFlashPlayerId={selfHealFlashPlayerId}
+          />
+        </div>
       </div>
 
-      <div
-        ref={handDesktopRef}
-        className="hidden md:flex md:flex-col md:w-24 shrink-0 rounded-xl border p-2 gap-2"
-        style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
-      >
-        <span className={`text-[12px] font-bold tracking-widest uppercase text-center leading-snug`} style={{ color: "#6d5f94" }}>
-          {mode !== 'discard' && mode !== 'scorpioHeal' && <ApBadge cost="1" color="#6d5f94" />}
-          {mode === "discard" ? t("gameScreen.tapToDiscard") : mode === "scorpioHeal" ? t("gameScreen.pickACard") : t("gameScreen.tapToChannel")}
-        </span>
-        <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
-      </div>
-
-      <div className="w-full md:w-72 shrink-0 md:overflow-y-auto">
-        <ControlPanel
-          state={state}
-          mode={mode}
-          discardCount={discardSel.size}
-          onMode={setUiMode}
-          onConfirmDiscard={doConfirmDiscard}
-          onEndTurn={requestEndTurn}
-          onConvertHandEarth={doConvertHandEarth}
-          healTargeting={healTargeting}
-          onPlayerHeal={onPlayerHeal}
-          showRotate={showRotate}
-          onRotate={onRotateCard}
-          shieldPreviewActive={mode === "virgoShield" && shieldPreview !== null}
-          starFlash={starFlash}
-          shieldFlashPlayerId={shieldFlashPlayerId}
-          selfHealFlashPlayerId={selfHealFlashPlayerId}
-        />
+      {/* Mobile-only D-pad drawer. A always-visible handle bar sits on top (tap to toggle); the
+          D-pad card itself slides open/closed beneath it via a `max-height` transition — collapsing
+          it reclaims that space for the scrollable top pane above (`flex-1`), letting the board
+          grow into it for a player who doesn't need on-screen navigation right now. The D-pad's own
+          content/styling is otherwise unchanged: same outer card look as the hand panel, each
+          button sized/shaped like a Star Card in hand (see CardHand's own button className). The 4
+          arrows drive the same `moveBoardCursor` the arrow keys use, remapped for `boardRotated` the
+          same way, so a tap always moves the cursor the direction it visually points regardless of
+          board orientation. The 5th button (right of ▶, visually set apart in cyan) is the touch
+          equivalent of Enter/Space — activates whatever tile the cursor is currently on, exactly
+          like the keyboard does. */}
+      <div className="shrink-0 md:hidden">
+        <button
+          onClick={() => setDpadVisible((v) => !v)}
+          aria-label={dpadVisible ? t("gameScreen.dpadHide") : t("gameScreen.dpadShow")}
+          aria-expanded={dpadVisible}
+          className="w-full flex items-center justify-center gap-1.5 py-1 rounded-t-lg border border-b-0 text-[11px] font-bold tracking-widest uppercase"
+          style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", color: "#a99cd4" }}
+        >
+          <span
+            className="inline-block"
+            style={{ transition: "transform 300ms ease-in-out", transform: dpadVisible ? "rotate(0deg)" : "rotate(180deg)" }}
+          >
+            ▾
+          </span>
+          {dpadVisible ? t("gameScreen.dpadHide") : t("gameScreen.dpadShow")}
+        </button>
+        {/* `overflow-hidden` + `max-height` (not `height`, which can't be transitioned to/from
+            `auto`) is what makes this genuinely slide open/closed instead of just popping — the
+            fixed max value (96px) just needs to comfortably exceed the D-pad's real content height
+            (5 buttons at h-[2.5rem]/40px plus padding), never to match it exactly. */}
+        <div className="overflow-hidden transition-[max-height] duration-300 ease-in-out" style={{ maxHeight: dpadVisible ? 96 : 0 }}>
+          <div className="rounded-b-xl border border-t-0 p-2 sm:p-2.5" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
+            <div className="flex gap-2 sm:gap-3 justify-center">
+              {(
+                [
+                  { dir: "left", glyph: "◀" },
+                  { dir: "up", glyph: "▲" },
+                  { dir: "down", glyph: "▼" },
+                  { dir: "right", glyph: "▶" }
+                ] as const
+              ).map(({ dir, glyph }) => (
+                <button
+                  key={dir}
+                  onClick={() => moveBoardCursor(dir)}
+                  aria-label={t(`gameScreen.boardCursor${dir[0].toUpperCase()}${dir.slice(1)}`)}
+                  className="relative w-14 h-[2.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
+                  style={{
+                    borderColor: "#3b2d5e",
+                    background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
+                    boxShadow: "0 0 6px #3b2d5e55",
+                    color: "#a99cd4"
+                  }}
+                >
+                  {glyph}
+                </button>
+              ))}
+              <button
+                onClick={selectBoardCursor}
+                disabled={!boardCursor}
+                aria-label={t("gameScreen.boardCursorSelect")}
+                className="relative w-14 h-[2.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
+                style={{
+                  borderColor: boardCursor ? "#5eb3ff" : "#3b2d5e",
+                  background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
+                  boxShadow: boardCursor ? "0 0 10px #5eb3ff88" : "none",
+                  color: boardCursor ? "#5eb3ff" : "#3b2d5e",
+                  opacity: boardCursor ? 1 : 0.5,
+                  cursor: boardCursor ? "pointer" : "not-allowed"
+                }}
+              >
+                ✓
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {state.phase === "lost" && !dismissedEndOverlay && (

@@ -5,6 +5,7 @@ import { elementDescription, elementLabel, signAbility, signDesc, signLabel, sur
 import type { PlayerSetup, Sign } from "../types";
 import {
   addFavoriteSeed,
+  clearLastSetup,
   loadFavoriteSeeds,
   loadLastCount,
   loadLastSeed,
@@ -18,6 +19,7 @@ import {
 import { article } from "../utils/grammar";
 import { HowToPlay } from "./HowToPlay";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { Select } from "./Select";
 import { Tooltip } from "./Tooltip";
 import boardImage from "../assets/how-to-play/story.png";
 import corruptionImage from '../assets/how-to-play/corrupted-star-card.png';
@@ -118,6 +120,10 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
     saveLastSetup(count, activeSlots);
     saveLastSeed(seed);
     onStart(activeSlots, seed);
+  };
+  const resetToDefaults = () => {
+    clearLastSetup(count);
+    setSlots((prev) => prev.map((s, i) => (i < count ? defaultSlots(count)[i] : s)));
   };
 
   useEffect(() => {
@@ -302,6 +308,19 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
             )}
           </div>
 
+          <div className="flex justify-end">
+            <Tooltip text={t("setup.resetToDefaultsTooltip")}>
+              <button
+                type="button"
+                onClick={resetToDefaults}
+                className="text-[11px] uppercase tracking-widest font-bold px-2.5 py-1 rounded border"
+                style={{ borderColor: "#3b2d5e", color: "#6d5f94" }}
+              >
+                ↺ {t("setup.resetToDefaults")}
+              </button>
+            </Tooltip>
+          </div>
+
           {activeSlots.map((slot, i) => {
             const el = SIGNS[slot.sign].element;
             const c = ELEMENT_META[el].color;
@@ -316,18 +335,22 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                     placeholder={t("setup.playerNamePlaceholder", { n: i + 1 })}
                     maxLength={20}
                   />
-                  <select
+                  <Select
                     value={slot.sign}
-                    onChange={(e) => update(i, { sign: e.target.value as Sign })}
-                    className="rounded border px-2 py-1.5 text-sm"
+                    onChange={(sign) => update(i, { sign })}
+                    ariaLabel={t("setup.playerSignSelectLabel", { n: i + 1 })}
+                    className="rounded border px-2 py-1.5 text-sm whitespace-nowrap"
                     style={{ borderColor: c, background: "#0b0914", color: c, fontWeight: "bold" }}
-                  >
-                    {(Object.keys(SIGNS) as Sign[]).map((k) => (
-                      <option key={k} value={k}>
-                        {SIGNS[k].glyph} {signLabel(t, k)} · {elementLabel(t, SIGNS[k].element)}
-                      </option>
-                    ))}
-                  </select>
+                    options={(Object.keys(SIGNS) as Sign[]).map((k) => ({
+                      value: k,
+                      color: ELEMENT_META[SIGNS[k].element].color,
+                      label: (
+                        <>
+                          {SIGNS[k].glyph} {signLabel(t, k)} · {elementLabel(t, SIGNS[k].element)}
+                        </>
+                      )
+                    }))}
+                  />
                 </div>
                 <div className={`text-[${BODY_FONT_SIZE}] leading-snug`} style={{ color: "#a99cd4" }}>
                   <span style={{ color: c, fontWeight: "bold" }}>{signAbility(t, slot.sign)}:</span> {signDesc(t, slot.sign)}
