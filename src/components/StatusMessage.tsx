@@ -59,22 +59,22 @@ export function StatusMessage({ batchId, messages }: { batchId: number; messages
   }, [current]);
 
   return (
+    // `md:ml-[164px]` (not applied below `md:`) is what visually centers this against the board on
+    // desktop, where it sits in a wide row next to DeckTray — on a narrow mobile screen that same
+    // fixed offset would just shove the text into (or past) DeckTray's own column, so it's dropped
+    // entirely below `md:`. Sizing (padding/min-height/font-size) is also scaled down below `sm:`/
+    // `md:` — this row directly competes with the board for vertical space on a short mobile
+    // viewport, so keeping it as compact as legibly possible there matters more than on desktop.
     <div
-      className="flex-1 min-w-0 rounded-lg px-3 sm:px-4 py-1.5 flex items-center"
-      style={{ marginLeft: 164, justifyContent: 'center', minHeight: 56 }}
+      className="flex-1 min-w-0 rounded-lg px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 flex items-center justify-center min-h-[34px] sm:min-h-[44px] md:min-h-[56px] md:ml-[164px]"
     >
       <span
-        className="sm:text-base font-semibold leading-snug transition-opacity"
+        className="text-sm sm:text-base md:text-[20px] font-semibold leading-snug transition-opacity text-center"
         style={{
           animation: "caPulse 1s ease-in-out infinite",
-          textAlign: "center",
-          justifyContent: 'center',
           color: "#f1eeff",
           opacity: current && visible ? 1 : 0,
           transitionDuration: `${FADE_MS}ms`,
-          fontWeight: "bold",
-          fontSize: "20px",
-          height: "26px",
           textShadow: `0 0 8px #b77a00`
         }}
       >

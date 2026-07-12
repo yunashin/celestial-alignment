@@ -40,7 +40,9 @@ setup:
 # underlined-shortcut button labels noted at the top of this file, since a keyboard key isn't a
 # word that has a translation.
 howToPlay:
-  intro: "Celestial Alignment is a local, pass-and-play <b>cooperative</b> game — no accounts, no server, no solo AI opponent, just everyone gathered around one screen taking turns. Every action can also be triggered entirely from the <b>keyboard</b>; expand the table below whenever you want the full shortcut list."
+  intro: "Celestial Alignment is a local co-op pass-the-mouse (or keyboard) game. Every action can also be triggered entirely from the <b>keyboard</b>! Expand the table below to view the full shortcut list."
+  tip: "Tip:"
+  tipContent: "Grab an HDMI cord and play on a large screen! Put 1-2 players on a mouse, and 1-2 players on a keyboard. Or you can play single-player and choose whichever mode and players you'd like!"
   shortcutsToggle: "⌨ Keyboard Shortcuts"
   shortcuts:
     categoryGeneral: "General"
@@ -347,6 +349,7 @@ log:
   placeVanguard: " — Vanguard: 0 AP"
   chain: "🔗{glyph} {label} chain of {count} cards aligns from ({sx},{sy}) to ({ex},{ey})"
   chainEased: " — Eclipse Tracker eases by {pct}%."
+  chainAlreadyDrained: " — Eclipse Tracker is already at 0%! 💠"
   airSurge: "💨💨💨 Air Surge 💨💨💨 {name} draws a free card."
   fireSurgeCleanse: "🔥🔥🔥 Fire Surge 🔥🔥🔥 Corruption at ({x},{y}) burns away."
   fireSurgeNoTarget: "🔥 Fire Surge 🔥 No adjacent corruption to burn."

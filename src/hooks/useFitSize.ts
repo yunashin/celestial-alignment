@@ -16,9 +16,17 @@ export function useFitSize(aspectW: number, aspectH: number, maxWidth: number, m
     const parent = el?.parentElement;
     if (!parent) return;
     const measure = () => {
-      const availW = parent.clientWidth - reservePx;
-      const availH = parent.clientHeight - reservePx;
-      if (availW <= 0 || availH <= 0) return;
+      // Clamped to at least 1px rather than bailing out when the parent's box has collapsed to
+      // zero (or gone negative after `reservePx`) — a real scenario on a short mobile viewport,
+      // where a `flex-1 min-h-0` sibling can genuinely get squeezed to 0 by other content that
+      // doesn't shrink. Bailing out here used to leave `size` at its *initial* fallback
+      // (`{width: maxWidth, height: maxHeight}`) — a real, previously-latent bug: that fallback is
+      // sized for "plenty of room on a big screen," so on a container with no room at all it
+      // rendered oversized and off-screen instead of just very small. Always computing a real
+      // (if tiny) fit means the board stays correctly proportioned and on-screen no matter how
+      // little space it's actually given, and the page's own scroll handles the rest.
+      const availW = Math.max(parent.clientWidth - reservePx, 1);
+      const availH = Math.max(parent.clientHeight - reservePx, 1);
       let width = Math.min(availW, maxWidth);
       let height = (width * aspectH) / aspectW;
       if (height > Math.min(availH, maxHeight)) {

@@ -37,6 +37,7 @@ export function TileView({
   apCostBadge,
   corruptionTotalTurns,
   cursorFocused,
+  rotated,
   lit,
   glow,
   activeId,
@@ -58,6 +59,16 @@ export function TileView({
   // card crumbles — null if that can't be resolved (placer stuck in Stasis indefinitely).
   corruptionTotalTurns?: number | null;
   cursorFocused?: boolean;
+  // Whole-board 90° rotation (see GridBoard's own doc comment) rotates every tile as a rigid body,
+  // which is exactly correct for the card connector shapes (CardGlyph, rendered further below) —
+  // they need to keep pointing at wherever their real neighbor now sits on screen. Everything else
+  // in this component that's actually readable (numbers, corner-badge glyphs, the elemental node
+  // icon, PlayerTokens) gets counter-rotated back upright via this flag instead, since a sideways
+  // "3" or sideways zodiac glyph is just confusing, not meaningfully "more correct." Purely cosmetic
+  // effects that are rotationally symmetric on a square tile (radial flashes, uniform borders/rings,
+  // the spinning Orrery symbol) are deliberately left untouched either way — rotating them would be
+  // extra code for zero visible difference.
+  rotated?: boolean;
   lit: boolean;
   glow?: GlowInfo;
   activeId: number;
@@ -191,7 +202,7 @@ export function TileView({
         )}
 
         {tile.node && (
-          <div className="flex items-center justify-center w-full h-full">
+          <div className="flex items-center justify-center w-full h-full" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
             <span className="text-xs sm:text-lg" style={{ filter: `drop-shadow(0 0 5px ${glowColor ?? ELEMENT_META[tile.node].color})` }}>
               {ELEMENT_META[tile.node].glyph}
             </span>
@@ -263,7 +274,15 @@ export function TileView({
               side="right"
             >
               <div className="absolute inset-0 rounded-lg flex items-center justify-center" style={{ background: "rgba(120,0,180,0.35)", animation: "caGlitch 0.5s steps(2) infinite" }}>
-                <span className={`text-[${BODY_FONT_SIZE}] sm:text-sm font-bold`} style={{ color: showDanger ? "#ff6767" : "#c084fc", textShadow: showDanger ? "0 0 8px #9c2626" : "0 0 8px #a855f7" }}>
+                <span
+                  className={`text-[${BODY_FONT_SIZE}] sm:text-sm font-bold`}
+                  style={{
+                    color: showDanger ? "#ff6767" : "#c084fc",
+                    textShadow: showDanger ? "0 0 8px #9c2626" : "0 0 8px #a855f7",
+                    display: "inline-block",
+                    transform: rotated ? "rotate(-90deg)" : undefined
+                  }}
+                >
                   {displayed}
                 </span>
               </div>
@@ -398,11 +417,17 @@ export function TileView({
       {/* Centered icons and corner badges below render as direct children of the tile root (NOT
           the clipped wrapper above), specifically so their Tooltip popups can escape the tile's
           own tiny, `overflow-hidden` bounding box instead of being clipped invisible inside it —
-          the root div has no overflow restriction of its own. The root's `flex items-center
-          justify-center` (otherwise inert, since every other direct child is absolutely
-          positioned) is what centers the asteroid/void/shooting-star icons here without needing
-          their own centering wrapper. */}
-      {tile.isAsteroid && (
+          the root div has no overflow restriction of its own. This wrapper (rather than the root's
+          own `flex items-center justify-center`) is what centers the asteroid/void/shooting-star
+          icons here without needing their own centering wrapper — and, being `absolute inset-0`
+          sized to exactly match the (square) tile, counter-rotating IT by -90° when the board is
+          rotated keeps every badge/glyph here upright and in the same on-screen corner it'd occupy
+          unrotated, with zero per-badge changes needed. None of these are tied to a specific
+          neighbor direction (unlike the card connectors above, deliberately left un-rotated) —
+          they're arbitrary declutter corners, so undoing the board's rotation for the whole group
+          is exactly what "stay readable" means for them. */}
+      <div className="absolute inset-0 flex items-center justify-center" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
+        {tile.isAsteroid && (
         <Tooltip title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
           <span className="text-xs sm:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
             🪨
@@ -503,7 +528,8 @@ export function TileView({
         </Tooltip>
       )}
 
-      <PlayerTokens playersHere={playersHere} activeId={activeId} lastActedId={lastActedId} />
+        <PlayerTokens playersHere={playersHere} activeId={activeId} lastActedId={lastActedId} />
+      </div>
     </div>
   );
 }

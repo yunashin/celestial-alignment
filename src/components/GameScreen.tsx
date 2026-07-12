@@ -14,6 +14,7 @@ import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
+import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SeedDisplay } from "./SeedDisplay";
 import { StatusMessage } from "./StatusMessage";
@@ -54,6 +55,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const [statusBatch, setStatusBatch] = useState<{ id: number; messages: string[] }>({ id: 0, messages: [] });
   const [boardCursor, setBoardCursor] = useState<{ x: number; y: number } | null>(null);
   const active = state.players[state.active];
+  // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
+  // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
+  // one is the whole-board 90° layout rotation for narrow/portrait viewports (see GridBoard).
+  const boardRotated = useIsPortraitViewport();
 
   // A fresh turn starts the keyboard board-cursor over: the previous player's arrow-key position
   // isn't a meaningful default for whoever's turn it is now. Also clears once the game leaves
@@ -465,10 +470,22 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           setBoardCursor((prev) => {
             const base = prev ?? { x: p.position.x, y: p.position.y };
             let { x, y } = base;
-            if (k === "arrowup") x -= 1;
-            else if (k === "arrowdown") x += 1;
-            else if (k === "arrowleft") y -= 1;
-            else if (k === "arrowright") y += 1;
+            // A rotated board (see GridBoard/boardRotated) visually swaps which data axis reads as
+            // "up/down" vs "left/right" on screen — WATER (y=0) is now the top edge and EARTH
+            // (x=HEIGHT-1) the left edge, not AIR (x=0)/WATER (y=0) as in the unrotated layout — so
+            // the arrow keys need the matching remap to keep moving the cursor the way it visually
+            // points, instead of silently stepping "up" sideways once the board is rotated.
+            if (boardRotated) {
+              if (k === "arrowup") y -= 1;
+              else if (k === "arrowdown") y += 1;
+              else if (k === "arrowleft") x += 1;
+              else if (k === "arrowright") x -= 1;
+            } else {
+              if (k === "arrowup") x -= 1;
+              else if (k === "arrowdown") x += 1;
+              else if (k === "arrowleft") y -= 1;
+              else if (k === "arrowright") y += 1;
+            }
             return { x: Math.max(0, Math.min(HEIGHT - 1, x)), y: Math.max(0, Math.min(WIDTH - 1, y)) };
           });
           break;
@@ -509,16 +526,31 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview]);
+  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated]);
 
   return (
-    <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 overflow-hidden">
-      <div className="flex-1 min-h-0 flex flex-col gap-2 md:gap-3">
+    // `min-h-dvh` (not a fixed `h-dvh`) below `md:` — a short mobile viewport (many stock phone
+    // sizes, not just extreme ones: the board could shrink to a barely-visible sliver here before
+    // this fix) genuinely doesn't have room for the header + deck tray + board + hand panel +
+    // full-height ControlPanel all at once, since ControlPanel never shrinks or scrolls on mobile
+    // (ControlPanel's own `md:overflow-y-auto` is desktop-only by design — see its own comments).
+    // Letting this root grow past one viewport height instead of clipping (`overflow-hidden`) means
+    // the ALREADY-`overflow-y-auto` ancestor in App.tsx just scrolls the whole page on mobile,
+    // exactly like most stacked-layout mobile UIs — desktop is completely unaffected (`md:h-dvh
+    // md:overflow-hidden` restores the original fixed, no-page-scroll behavior there).
+    <div className="w-full min-h-dvh md:h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 md:overflow-hidden">
+      {/* `gap-1.5` (not `gap-2`) below `sm:` — every bit of vertical chrome above the hand panel on
+          mobile is space the board doesn't get, since (per the board wrapper's own comment below)
+          this section's total content already exceeds one viewport height on a short phone, so
+          `flex-1`/`min-h` on the board is mostly just picking its own floor rather than genuinely
+          growing into leftover space. */}
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
             remaining space equally and may wrap their contents, but can't intrude into the
-            center track no matter how narrow the viewport gets. */}
+            center track no matter how narrow the viewport gets. Back/Language/Seed all shrink a
+            notch below `sm:` for the same "every pixel of chrome competes with the board" reason. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 shrink-0">
           {/* side="right" (not the default centered "bottom") since this button sits flush at the
               left edge of a container with overflow-hidden — a horizontally-centered popup would
@@ -526,30 +558,35 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           <Tooltip className="relative inline-flex justify-self-start" text={t("gameScreen.backTooltip")} side="right">
             <button
               onClick={doBack}
-              className={`px-2 py-1 rounded border text-[${BODY_FONT_SIZE}px] font-bold tracking-widest uppercase`}
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border text-[11px] sm:text-[${BODY_FONT_SIZE}px] font-bold tracking-widest uppercase`}
               style={{ borderColor: "#3b2d5e", color: "#a99cd4" }}
             >
               <span>◂ <span style={{ textDecoration: 'underline' }}>B</span>ack</span>
             </button>
           </Tooltip>
           <div className="text-center leading-tight justify-self-center">
-            <div className="text-sm sm:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 10px #5eb3ff88" }}>
+            <div className="text-xs sm:text-sm md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 10px #5eb3ff88" }}>
               {t("common.appNameLine1")}
             </div>
-            <div className="text-sm sm:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 10px #5eb3ff88" }}>
+            <div className="text-xs sm:text-sm md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 10px #5eb3ff88" }}>
               {t("common.appNameLine2")}
             </div>
           </div>
           {/* side="bottom" — this badge sits flush at the right edge, so the default centered
               popup would overflow off-screen to the right and top and get clipped by the root's
               overflow-hidden, same reasoning as the Back button's side="right" above. */}
-          <div className="justify-self-end flex flex-wrap items-center justify-end gap-1.5">
+          <div className="justify-self-end flex flex-wrap items-center justify-end gap-1 sm:gap-1.5">
             <LanguageSwitcher className="flex gap-1" />
-            <SeedDisplay seed={state.seed} className={`px-2 py-1 rounded border text-[${BODY_FONT_SIZE}] font-bold tracking-widest`} style={{ borderColor: "#3b2d5e" }} side="bottom" />
+            <SeedDisplay
+              seed={state.seed}
+              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border text-[11px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest`}
+              style={{ borderColor: "#3b2d5e" }}
+              side="bottom"
+            />
           </div>
         </div>
 
-        <div className="flex items-stretch gap-2">
+        <div className="flex items-stretch gap-1.5 sm:gap-2">
           <StatusMessage batchId={statusBatch.id} messages={statusBatch.messages} />
           <DeckTray
             starCount={state.starDeck.length}
@@ -565,7 +602,17 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
         {state.phase === "won" && <WinBanner onReset={doBack} />}
 
-        <div ref={boardWrapRef} className="flex-1 min-h-0 flex items-center justify-center">
+        {/* `min-h-[420px]` keeps the board itself from being squeezed down to an unusably tiny
+            sliver on a short mobile viewport, now that the page can scroll (see the root div's own
+            comment above) instead of everything having to cram into exactly one viewport height —
+            in practice this floor, not `flex-1`'s growth, is what determines the board's actual
+            mobile size: the header + status/deck row + hand panel + ControlPanel's own natural
+            height already exceed a typical phone's viewport on their own, so there's rarely genuine
+            leftover space for `flex-1` to distribute. Sized generously (rather than just "not
+            broken") specifically so the board reads as the dominant, most-important element on
+            screen, per the general mobile-layout goal of keeping everything ABOVE the hand panel as
+            compact as legibly possible so the board gets the lion's share of the space. */}
+        <div ref={boardWrapRef} className="flex-1 min-h-[420px] flex items-center justify-center">
           <GridBoard
             state={state}
             highlights={highlights}
@@ -578,6 +625,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             cardPreview={cardPreview}
             apCostTiles={apCostTiles}
             cursorTile={boardCursor}
+            rotated={boardRotated}
             onTileClick={onTileClick}
           />
         </div>

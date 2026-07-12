@@ -109,7 +109,7 @@ export function initGame(setup: PlayerSetup[], locale: string = getLocale(), see
     ap: STARTING_AP,
     starDeck: buildStarDeck(rng),
     starDiscard: [],
-    eclipseDeck: buildEclipseDeck(rng, activeElements),
+    eclipseDeck: buildEclipseDeck(rng, activeElements, setup.length),
     eclipseDiscard: [],
     tracker: 0,
     turn: 1,
@@ -422,8 +422,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         s.lastChainEvent = { tiles: Array.from(chainAfterGroup), start: chainStart, end: chainEnd };
         const chainExtraLength = chainAfter - CHAIN_LENGTH_THRESHOLD + 1;
         const reduction = (card.element === p.element ? CHAIN_TRACKER_DISCOUNT_OWN : CHAIN_TRACKER_DISCOUNT) + CHAIN_TRACKER_BONUS_DISCOUNT * chainExtraLength;
+        const trackerPhrase = s.tracker === 0 ? tr("log.chainAlreadyDrained") : tr("log.chainEased", { pct: reduction });
         s.tracker = Math.max(0, s.tracker - reduction);
-        const trackerPhrase = tr("log.chainEased", { pct: reduction });
         const glyph = ELEMENT_META[card.element].glyph;
         // Capped so a very long chain (e.g. one that also happens to complete a whole path) doesn't
         // print a wall of repeated emoji into the log — the number/tracker text already conveys size.

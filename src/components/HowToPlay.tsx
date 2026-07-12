@@ -141,6 +141,16 @@ export function HowToPlay({ t, screenshots }: { t: TFunc; screenshots?: { board:
         )}
       </div>
 
+      <div
+        className={`text-[${BODY_FONT_SIZE}] leading-relaxed rounded-lg border px-3 py-2`}
+        style={{ borderColor: "#3b2d5e", background: "rgba(94,179,255,0.08)", color: "#a99cd4" }}
+      >
+        <span className="font-bold" style={{ color: "#5eb3ff" }}>
+          {t("howToPlay.tip")}
+        </span>{" "}
+        {boldify(t("howToPlay.tipContent"))}
+      </div>
+
       <Section heading={t("howToPlay.story.heading")}>{t("howToPlay.story.text")}</Section>
 
       {screenshots && (
