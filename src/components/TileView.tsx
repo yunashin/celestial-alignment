@@ -157,7 +157,7 @@ export function TileView({
     <div
       onClick={onClick}
       data-tile={`${tile.x},${tile.y}`}
-      className={`group/tile relative w-full h-full rounded sm:rounded-md border flex items-center justify-center select-none ${highlighted ? "cursor-pointer" : ""}`}
+      className={`group/tile relative w-full h-full rounded md:rounded-md border flex items-center justify-center select-none ${highlighted ? "cursor-pointer" : ""}`}
       style={{
         borderColor,
         borderStyle: (highlighted && !previewed) || cursorFocused ? "dashed" : "solid",
@@ -170,7 +170,7 @@ export function TileView({
     >
       {/* Visual effects that should stay clipped to the tile's rounded box. PlayerTokens renders
           outside this wrapper so its hover tooltip can pop up past the tile's own bounds. */}
-      <div className="absolute inset-0 overflow-hidden rounded sm:rounded-md flex items-center justify-center">
+      <div className="absolute inset-0 overflow-hidden rounded md:rounded-md flex items-center justify-center">
         {glow?.gradient && !tile.isCenter && (
           <div
             className="absolute inset-0 pointer-events-none"
@@ -203,7 +203,7 @@ export function TileView({
 
         {tile.node && (
           <div className="flex items-center justify-center w-full h-full" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
-            <span className="text-xs sm:text-lg" style={{ filter: `drop-shadow(0 0 5px ${glowColor ?? ELEMENT_META[tile.node].color})` }}>
+            <span className="text-xs md:text-lg" style={{ filter: `drop-shadow(0 0 5px ${glowColor ?? ELEMENT_META[tile.node].color})` }}>
               {ELEMENT_META[tile.node].glyph}
             </span>
           </div>
@@ -275,7 +275,7 @@ export function TileView({
             >
               <div className="absolute inset-0 rounded-lg flex items-center justify-center" style={{ background: "rgba(120,0,180,0.35)", animation: "caGlitch 0.5s steps(2) infinite" }}>
                 <span
-                  className={`text-[${BODY_FONT_SIZE}] sm:text-sm font-bold`}
+                  className={`text-[${BODY_FONT_SIZE}] md:text-sm font-bold`}
                   style={{
                     color: showDanger ? "#ff6767" : "#c084fc",
                     textShadow: showDanger ? "0 0 8px #9c2626" : "0 0 8px #a855f7",
@@ -378,28 +378,28 @@ export function TileView({
 
         {lunarShielded && (
           <div
-            className="absolute inset-0 rounded sm:rounded-md pointer-events-none"
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
             style={{ boxShadow: "inset 0 0 8px #5eb3ffaa", border: "1px solid #5eb3ff66" }}
           />
         )}
 
         {tile.isEnclosed && (
           <div
-            className="absolute inset-0 rounded sm:rounded-md pointer-events-none"
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
             style={{ boxShadow: "inset 0 0 8px #fbbf24aa", border: "1px solid #fbbf2466" }}
           />
         )}
 
         {tile.isPurified && !tile.isEnclosed && (
           <div
-            className="absolute inset-0 rounded sm:rounded-md pointer-events-none"
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
             style={{ boxShadow: "inset 0 0 8px #f1eeff99", border: "1px solid #f1eeff44" }}
           />
         )}
 
         {activePlayerHere && (
           <div
-            className="absolute inset-0 rounded sm:rounded-md pointer-events-none"
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
             style={{
               border: `2px solid ${ELEMENT_META[activePlayerHere.element].color}`,
               boxShadow: `0 0 10px ${ELEMENT_META[activePlayerHere.element].color}aa`
@@ -409,7 +409,7 @@ export function TileView({
 
         {cursorFocused && (
           <div
-            className="absolute inset-0 rounded sm:rounded-md pointer-events-none"
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
           />
         )}
       </div>
@@ -429,7 +429,7 @@ export function TileView({
       <div className="absolute inset-0 flex items-center justify-center" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
         {tile.isAsteroid && (
           <Tooltip title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
-            <span className="text-xs sm:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
+            <span className="text-xs md:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
               🪨
             </span>
           </Tooltip>
@@ -437,7 +437,7 @@ export function TileView({
 
         {tile.isVoid && (
           <Tooltip title={t("tileView.voidTitle")} text={t("tileView.voidText")}>
-            <span className="text-xs sm:text-lg" style={{ animation: "caSpin 5s linear infinite", filter: "drop-shadow(0 0 8px #a855f7)" }}>
+            <span className="text-xs md:text-lg" style={{ animation: "caSpin 5s linear infinite", filter: "drop-shadow(0 0 8px #a855f7)" }}>
               🕳️
             </span>
           </Tooltip>
@@ -445,7 +445,7 @@ export function TileView({
 
         {tile.isShootingStar && (
           <Tooltip title={t("tileView.shootingStarTitle")} text={tile.powerUp ? powerUpText(t, tile.powerUp) : undefined}>
-            <span className="text-xs sm:text-lg" style={{ animation: "caPulse 1.3s ease-in-out infinite", filter: "drop-shadow(0 0 8px #ffd166)" }}>
+            <span className="text-xs md:text-lg" style={{ animation: "caPulse 1.3s ease-in-out infinite", filter: "drop-shadow(0 0 8px #ffd166)" }}>
               💫
             </span>
           </Tooltip>
@@ -453,28 +453,28 @@ export function TileView({
 
         {tile.isShootingStar && tile.powerUp === "TRACKER_DOWN" && (
           <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
-            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+            <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ☽
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "BONUS_AP" && (
           <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
-            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+            <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ◇
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "BONUS_HAND" && (
           <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
-            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+            <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ☆
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "HEAL_UNLOCK" && (
           <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
-            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+            <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ♡
             </span>
           </Tooltip>
@@ -488,7 +488,7 @@ export function TileView({
 
         {tile.isLocked && (
           <Tooltip className="absolute right-px top-px z-10 inline-flex" title={t("tileView.lockedTitle")} text={t("tileView.lockedText")}>
-            <span className="leading-none text-[7px] sm:text-[10px]" style={{ color: "#3dd68c", textShadow: "0 0 5px #3dd68c" }}>
+            <span className="leading-none text-[7px] md:text-[10px]" style={{ color: "#3dd68c", textShadow: "0 0 5px #3dd68c" }}>
               ◈
             </span>
           </Tooltip>
@@ -496,7 +496,7 @@ export function TileView({
 
         {tile.isShielded && (
           <Tooltip className="absolute left-px top-px z-10 inline-flex" title={t("tileView.shieldedTitle")} text={t("tileView.shieldedText")}>
-            <span className="leading-none text-[8px] sm:text-xs" style={{ filter: "drop-shadow(0 0 4px #7dd3fc)" }}>
+            <span className="leading-none text-[8px] md:text-xs" style={{ filter: "drop-shadow(0 0 4px #7dd3fc)" }}>
               🛡️
             </span>
           </Tooltip>
@@ -509,7 +509,7 @@ export function TileView({
             title={t("tileView.lunarShieldTitle")}
             text={t("tileView.lunarShieldText")}
           >
-            <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #5eb3ff)" }}>
+            <span className="leading-none text-[7px] md:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #5eb3ff)" }}>
               🌊
             </span>
           </Tooltip>
@@ -522,7 +522,7 @@ export function TileView({
             title={t("tileView.enclosedTitle")}
             text={t("tileView.enclosedText")}
           >
-            <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #fbbf24)" }}>
+            <span className="leading-none text-[7px] md:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #fbbf24)" }}>
               🔒
             </span>
           </Tooltip>

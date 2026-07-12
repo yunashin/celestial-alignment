@@ -40,7 +40,7 @@ export function CardHand({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex gap-2 sm:gap-3 justify-center flex-wrap md:flex-col md:flex-nowrap md:justify-start md:items-center md:overflow-y-auto md:h-full">
+    <div className="flex gap-2 md:gap-3 justify-center flex-wrap md:flex-col md:flex-nowrap md:justify-start md:items-center md:overflow-y-auto md:h-full">
       {player.hand.map((card, i) => {
         const c = ELEMENT_META[card.element].color;
         // Armed styling applies both when placing (mode "place") AND when a card has been picked

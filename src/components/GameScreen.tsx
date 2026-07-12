@@ -575,20 +575,20 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
     // means the bottom controls stay reachable within a fixed-size strip regardless of how tall the
     // board gets (see the board wrapper's own `widthPriority` comment), while the top pane can still
     // be scrolled on its own to reach the board's bottom edge if it's taller than its 2/3 share.
-    <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 sm:p-3 overflow-hidden">
+    <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 md:p-3 overflow-hidden">
       {/* TOP PANE: header, status/deck tray, win banner, D-pad, board. `overflow-y-auto` (mobile
           only — desktop reverts to its original non-scrolling natural sizing) is what keeps the
           board's bottom edge reachable even though the bottom pane below permanently claims its own
           ~1/3 of the screen instead of letting this section grow into that space. `gap-1.5` (not
-          `gap-2`) below `sm:` — every bit of vertical chrome above the board is space the board
+          `gap-3`) below `md:` — every bit of vertical chrome above the board is space the board
           doesn't get. */}
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
             remaining space equally and may wrap their contents, but can't intrude into the
             center track no matter how narrow the viewport gets. Back/Language/Seed all shrink a
-            notch below `sm:` for the same "every pixel of chrome competes with the board" reason. */}
+            notch below `md:` for the same "every pixel of chrome competes with the board" reason. */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 shrink-0">
           {/* side="right" (not the default centered "bottom") since this button sits flush at the
               left edge of a container with overflow-hidden — a horizontally-centered popup would
@@ -596,62 +596,79 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           <Tooltip className="relative inline-flex justify-self-start" text={t("gameScreen.backTooltip")} side="right">
             <button
               onClick={doBack}
-              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border text-[11px] sm:text-[${BODY_FONT_SIZE}px] font-bold tracking-widest uppercase`}
+              className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded border text-[11px] md:text-[${BODY_FONT_SIZE}px] font-bold tracking-widest uppercase`}
               style={{ borderColor: "#3b2d5e", color: "#a99cd4" }}
             >
               <span>◂ <span style={{ textDecoration: 'underline' }}>B</span>ack</span>
             </button>
           </Tooltip>
           <div className="text-center leading-tight justify-self-center">
-            <div className="text-xs sm:text-sm md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 10px #5eb3ff88" }}>
+            <div className="text-xs md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 10px #5eb3ff88" }}>
               {t("common.appNameLine1")}
             </div>
-            <div className="text-xs sm:text-sm md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 10px #5eb3ff88" }}>
+            <div className="text-xs md:text-base font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 10px #5eb3ff88" }}>
               {t("common.appNameLine2")}
             </div>
           </div>
           {/* side="bottom" — this badge sits flush at the right edge, so the default centered
               popup would overflow off-screen to the right and top and get clipped by the root's
               overflow-hidden, same reasoning as the Back button's side="right" above. */}
-          <div className="justify-self-end flex flex-wrap items-center justify-end gap-1 sm:gap-1.5">
+          <div className="justify-self-end flex flex-wrap items-center justify-end gap-1 md:gap-1.5">
             <LanguageSwitcher className="flex gap-1" />
             <SeedDisplay
               seed={state.seed}
-              className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border text-[11px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest`}
+              className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded border text-[11px] md:text-[${BODY_FONT_SIZE}] font-bold tracking-widest`}
               style={{ borderColor: "#3b2d5e" }}
               side="bottom"
             />
           </div>
         </div>
 
-        <div className="flex items-stretch gap-1.5 sm:gap-2">
-          <StatusMessage batchId={statusBatch.id} messages={statusBatch.messages} />
-          <DeckTray
-            starCount={state.starDeck.length}
-            eclipseCount={state.eclipseDeck.length}
-            discardCount={state.starDiscard.length}
-            starShuffling={starShuffling}
-            eclipseShuffling={eclipseShuffling}
-            starRef={starDeckRef}
-            eclipseRef={eclipseDeckRef}
-            discardRef={discardRef}
-          />
-        </div>
-
-        {/* Mobile-only copy of the Eclipse Tracker — see ControlPanel's own copy (now `hidden
-            md:block`) for why this is a second live render of the same component rather than the
-            desktop one repositioned via CSS. `sticky top-0` (mobile only — this whole block is
-            `md:hidden`) pins it to the top of the TOP PANE's own scroll container once the page is
-            scrolled past it, rather than letting it scroll away with the header above the board — a
-            solid-ish background is needed here since, once stuck, the board scrolls underneath it
-            and would otherwise show through. `z-20` keeps it above the board/win-banner content
-            scrolling beneath but under Tooltip's portaled popups (z-50, unaffected either way since
-            those escape to document.body). */}
+        {/* StatusMessage + DeckTray + Eclipse Tracker share ONE header block — a single live
+            instance of each (not a duplicated mobile/desktop pair like CardHand/ActionButtons
+            below), since none of them need fundamentally different JSX per breakpoint, just
+            different chrome/grouping around them. On mobile this whole block becomes a `sticky
+            top-0` card (border/background/padding all gated `md:`-off below) so it pins to the top
+            of the TOP PANE's own scroll container once the page scrolls past it, rather than
+            scrolling away with the board underneath — a solid-ish background is needed there
+            since, once stuck, the board scrolls beneath it and would otherwise show through. On
+            desktop, the TOP PANE never scrolls internally (`md:overflow-visible`), so
+            `sticky`/`z-20` are inert there regardless — the `md:static md:z-auto md:border-0
+            md:bg-transparent md:backdrop-blur-none md:rounded-none md:p-0` resets are just
+            belt-and-suspenders so the desktop row renders with zero card chrome. */}
         <div
-          className="rounded-lg shrink-0 md:hidden sticky top-0 z-20 px-1.5 py-1.5 border"
-          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)", borderColor: "#2a2340", animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+          className="flex flex-col gap-1.5 shrink-0 sticky top-0 z-20 md:static md:z-auto rounded-lg md:rounded-none border border-[#2a2340] md:border-0 px-1.5 py-1.5 md:p-0 bg-black/35 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none"
         >
-          <EclipseTracker value={state.tracker} />
+          {/* `flex-col md:flex-row` outer + `md:contents` on the DeckTray/Tracker wrapper is what
+              lets StatusMessage claim the FULL card width on its own row on mobile (far less text
+              wrapping, so its worst-case measured height — see StatusMessage's own doc comment —
+              stays much smaller than when it had to squeeze beside DeckTray) while desktop stays
+              pixel-identical to the original single-row [StatusMessage, DeckTray] layout: at `md:`
+              the wrapper vanishes from the box model (`contents`) and promotes its children back
+              up to be direct flex items of THIS row, and since the Eclipse Tracker div inside it is
+              itself `md:hidden`, only DeckTray survives into that row at desktop — exactly the two
+              original children, in the original order. */}
+          <div className="flex flex-col md:flex-row items-stretch gap-1.5 md:gap-2">
+            <StatusMessage batchId={statusBatch.id} messages={statusBatch.messages} />
+            <div className="flex items-center gap-1.5 md:contents">
+              <DeckTray
+                starCount={state.starDeck.length}
+                eclipseCount={state.eclipseDeck.length}
+                discardCount={state.starDiscard.length}
+                starShuffling={starShuffling}
+                eclipseShuffling={eclipseShuffling}
+                starRef={starDeckRef}
+                eclipseRef={eclipseDeckRef}
+                discardRef={discardRef}
+              />
+              <div
+                className="flex-1 min-w-0 md:hidden"
+                style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+              >
+                <EclipseTracker value={state.tracker} />
+              </div>
+            </div>
+          </div>
         </div>
 
         {state.phase === "won" && <WinBanner onReset={doBack} />}
@@ -709,7 +726,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
       </div>
 
-      <hr className="md:hidden" style={{ borderColor: "#3b2d5e" }} />
+      <hr className="md:hidden" style={{ borderColor: "#3b2d5e", marginTop: '-12px' }} />
 
       {/* BOTTOM PANE: everything below the board — hand panel, Eclipse Tracker, action buttons,
           ControlPanel (tabs/status card/roster) — pinned to roughly the bottom 1/3 of the screen on
@@ -718,12 +735,14 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           at `md:` — its children (all individually `md:hidden` except the ControlPanel wrapper) then
           fall back into the root's row layout exactly where ControlPanel already sat before this
           change, restoring the original 3-column desktop layout untouched. */}
-      <div className="shrink-0 h-[30dvh] md:h-auto flex flex-col gap-1.5 sm:gap-2 md:gap-3 overflow-y-auto md:contents">
+      <div className="shrink-0 h-[30dvh] md:h-auto flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:contents">
         {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn) — see ActionButtons'
             own doc comment for why this is a second live copy rather than the desktop one
             repositioned via CSS alone (ControlPanel's own copy is `hidden md:block`, the mirror
-            image of this `md:hidden`). */}
-        <div className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
+            image of this `md:hidden`). This whole block only ever renders below `md:`, so its own
+            classes need no responsive prefix of their own — there's no "desktop" state for them to
+            distinguish from. */}
+        <div className="rounded-xl border p-2 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
           <ActionButtons
             state={state}
             mode={mode}
@@ -741,10 +760,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
         <div
           ref={handMobileRef}
-          className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden"
+          className="rounded-xl border p-2 shrink-0 md:hidden"
           style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
         >
-          <div className={`text-[10px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase text-center mb-1 sm:mb-2`} style={{ color: "#6d5f94" }}>
+          <div className={`text-[10px] font-bold tracking-widest uppercase text-center mb-1`} style={{ color: "#6d5f94" }}>
             {mode === "discard" ? t("gameScreen.handHeaderDiscard", { name: active.name }) : t("gameScreen.handHeaderChannel", { name: active.name })}
           </div>
           <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
@@ -803,8 +822,8 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             fixed max value (96px) just needs to comfortably exceed the D-pad's real content height
             (5 buttons at h-[2.5rem]/40px plus padding), never to match it exactly. */}
         <div className="overflow-hidden transition-[max-height] duration-300 ease-in-out" style={{ maxHeight: dpadVisible ? 96 : 0 }}>
-          <div className="rounded-b-xl border border-t-0 p-2 sm:p-2.5" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
-            <div className="flex gap-2 sm:gap-3 justify-center">
+          <div className="rounded-b-xl border border-t-0 p-2" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
+            <div className="flex gap-2 justify-center">
               {(
                 [
                   { dir: "left", glyph: "◀" },

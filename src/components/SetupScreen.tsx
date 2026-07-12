@@ -160,10 +160,10 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
       </div>
 
       <div className="text-center">
-        <div className="text-2xl sm:text-3xl font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 12px #5eb3ff, 0 0 30px #ff00ff" }}>
+        <div className="text-2xl md:text-3xl font-bold tracking-[0.3em] uppercase" style={{ color: "#f1eeff", textShadow: "0 0 12px #5eb3ff, 0 0 30px #ff00ff" }}>
           {t("common.appNameLine1")}
         </div>
-        <div className="text-2xl sm:text-3xl font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 12px #5eb3ff" }}>
+        <div className="text-2xl md:text-3xl font-bold tracking-[0.3em] uppercase" style={{ color: "#5eb3ff", textShadow: "0 0 12px #5eb3ff" }}>
           {t("common.appNameLine2")}
         </div>
         <div className={`mt-2 text-[${BODY_FONT_SIZE}] tracking-widest uppercase`} style={{ color: "#6d5f94", padding: "0px 80px" }}>

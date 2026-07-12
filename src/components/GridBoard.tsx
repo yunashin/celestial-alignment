@@ -33,7 +33,7 @@ function EdgeLabel({
 
   return (
     <div
-      className={`absolute text-[10px] sm:text-[16px] font-bold tracking-[0.3em] uppercase whitespace-nowrap`}
+      className={`absolute text-[10px] md:text-[16px] font-bold tracking-[0.3em] uppercase whitespace-nowrap`}
       style={{ color: meta.color, textShadow: `0 0 6px ${meta.color}`, writingMode: vertical ? "vertical-rl" : undefined, ...edgeStyle }}
     >
       {elementLabel(t, element)}
@@ -151,7 +151,7 @@ export function GridBoard({
           rotate(90deg)`, so its rotated bounding box exactly fills the wrapper's (already
           portrait-shaped, from useFitSize above) box. */}
       <div
-        className="grid gap-0.5 sm:gap-1 p-1.5 sm:p-2.5 rounded-xl border"
+        className="grid gap-0.5 md:gap-1 p-1.5 md:p-2.5 rounded-xl border"
         style={{
           gridTemplateColumns: `repeat(${WIDTH}, 1fr)`,
           gridTemplateRows: `repeat(${HEIGHT}, 1fr)`,
