@@ -120,7 +120,7 @@ export function ControlPanel({
 
   return (
     <div
-      className="rounded-xl border p-3 sm:p-4 flex flex-col gap-3 w-full h-full md:overflow-y-auto md:max-h-dvh"
+      className="rounded-xl border p-3 md:p-4 flex flex-col gap-3 w-full h-full md:overflow-y-auto md:max-h-dvh"
       style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", boxShadow: "0 0 24px rgba(0,255,255,0.08)" }}
     >
       <div className="flex gap-1.5 shrink-0">
@@ -129,7 +129,7 @@ export function ControlPanel({
       </div>
 
       {tab === "status" && (
-        <div className="flex flex-col gap-5 sm:gap-6 flex-1 min-h-0">
+        <div className="flex flex-col gap-5 md:gap-6 flex-1 min-h-0">
           {/* Hidden on mobile — GameScreen renders its own copy of EclipseTracker in its mobile-only
               bottom pane, positioned just above the mobile ActionButtons copy (same "render twice,
               toggle via `md:`" pattern already used for ActionButtons/CardHand). */}

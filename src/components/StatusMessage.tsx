@@ -154,17 +154,19 @@ export function StatusMessage({ batchId, messages }: { batchId: number; messages
     // `md:ml-[164px]` (not applied below `md:`) is what visually centers this against the board on
     // desktop, where it sits in a wide row next to DeckTray — on a narrow mobile screen that same
     // fixed offset would just shove the text into (or past) DeckTray's own column, so it's dropped
-    // entirely below `md:`. Padding/font-size is also scaled down below `sm:`/`md:` — this row
-    // directly competes with the board for vertical space on a short mobile viewport, so keeping it
-    // as compact as legibly possible there matters more than on desktop. `minHeight` (measured, see
-    // the layout effect above) replaces what used to be a fixed `min-h-[34px] sm:...` guess.
+    // entirely below `md:`. Padding/font-size is also scaled down below `md:` — this row directly
+    // competes with the board for vertical space on a short mobile viewport (doubly so now that it
+    // lives inside the sticky mobile header alongside DeckTray/Eclipse Tracker — see GameScreen),
+    // so keeping it as compact as legibly possible there matters more than on desktop. `minHeight`
+    // (measured, see the layout effect above) replaces what used to be a fixed `min-h-[34px] ...`
+    // guess.
     <div
       ref={containerRef}
-      className="flex-1 min-w-0 rounded-lg px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 flex items-center justify-center md:ml-[164px]"
+      className="flex-1 min-w-0 rounded-lg px-2 md:px-4 py-1 md:py-1.5 flex items-center justify-center md:ml-[164px]"
       style={{ minHeight }}
     >
       <span
-        className="text-sm sm:text-base md:text-[20px] font-semibold leading-snug transition-opacity text-center"
+        className="text-sm md:text-[20px] font-semibold leading-snug transition-opacity text-center"
         style={{
           animation: "caPulse 1s ease-in-out infinite",
           color: "#f1eeff",
@@ -185,7 +187,7 @@ export function StatusMessage({ batchId, messages }: { batchId: number; messages
       <div
         ref={measureRef}
         aria-hidden
-        className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 text-sm sm:text-base md:text-[20px] font-semibold leading-snug text-center"
+        className="px-2 md:px-4 py-1 md:py-1.5 text-sm md:text-[20px] font-semibold leading-snug text-center"
         style={{ position: "fixed", top: 0, left: -99999, visibility: "hidden", pointerEvents: "none", whiteSpace: "normal" }}
       />
     </div>
