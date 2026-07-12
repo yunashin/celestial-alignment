@@ -101,6 +101,22 @@ export function useTranslation() {
   return { t, locale, setLocale };
 }
 
+/** Every leaf string template directly under the given namespace(s) (e.g. "log", "damageCards") in
+ * the CURRENTLY active locale, raw/uninterpolated (`{token}` placeholders left as-is). Used by
+ * StatusMessage to measure a worst-case render height from the ACTUAL current copy rather than a
+ * separately hand-maintained list of message text that would drift as YAML copy changes. */
+export function getNamespaceTemplates(...namespaces: string[]): string[] {
+  const dict = RESOURCES[currentLocale];
+  const out: string[] = [];
+  for (const ns of namespaces) {
+    const sub = dict[ns];
+    if (typeof sub === "object" && sub !== null) {
+      for (const v of Object.values(sub as Dict)) if (typeof v === "string") out.push(v);
+    }
+  }
+  return out;
+}
+
 /** Recursively collects every leaf (string-valued) dot-path key in a parsed locale dict. */
 function collectKeys(dict: Dict, prefix = ""): Set<string> {
   const keys = new Set<string>();

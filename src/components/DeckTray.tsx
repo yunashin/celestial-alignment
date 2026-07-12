@@ -49,7 +49,7 @@ export function DeckTray({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex justify-end gap-1.5 sm:gap-2 shrink-0">
+    <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
       <PileIcon ref={starRef} glyph="★" count={starCount} color="#e2e8f0" shuffling={starShuffling} tooltip={t("deckTray.starDeckTooltip", { count: starCount })} />
       <PileIcon ref={eclipseRef} glyph="☽" count={eclipseCount} color="#c084fc" shuffling={eclipseShuffling} tooltip={t("deckTray.eclipseDeckTooltip", { count: eclipseCount })} />
       <PileIcon ref={discardRef} glyph="♻" count={discardCount} color="#6d5f94" tooltip={t("deckTray.discardTooltip", { count: discardCount })} />

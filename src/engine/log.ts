@@ -24,6 +24,16 @@ export function logGroup(s: GameState, messages: string[]) {
   for (let i = messages.length - 1; i >= 0; i--) log(s, messages[i]);
 }
 
+/** Appends " [{before}% → {after}%]" to a tracker-changing log message, formatted via `fmtNum`.
+ * Empty string (no-op) when the value didn't actually move — e.g. an increase that was already
+ * capped at 100%, or a chain discount rolled when the tracker was already at 0% — so a message
+ * whose effect was fully absorbed doesn't claim a change that didn't happen. Only ever mixed into
+ * the full Event Log via `log()`; the curated Message Log (`important()`) stays on the plain,
+ * untagged message text. */
+export function trackerDelta(before: number, after: number): string {
+  return before === after ? "" : ` [${fmtNum(before)}% → ${fmtNum(after)}%]`;
+}
+
 /** Surfaces a message in the compact, curated `GameState.messageLog` alongside the full Event Log
  * — genuinely notable events only (Eclipse cards resolving, shooting stars, asteroid shifts,
  * chain-of-4+, path completions, closed loops, Element Surge, Stasis reboots, win/loss),

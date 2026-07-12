@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BODY_FONT_SIZE, ELEMENT_META, SHOOTING_STAR_SELF_HEAL_AMOUNT, SIGNS } from "../constants";
-import { canConvertHandEarth, canPurify, canScorpioHeal, canSelfHeal, canUseVirgoShield, hasAnyAction, purifyDisabledReason } from "../engine/rules";
+import { BODY_FONT_SIZE, ELEMENT_META, SIGNS } from "../constants";
 import { useTranslation } from "../i18n";
 import { elementLabel, signAbility, signDesc, signLabel, surgeText, type TFunc } from "../i18n/gameText";
 import type { GameState, Player, PowerUp, UiMode } from "../types";
 import { article } from "../utils/grammar";
+import { ActionButtons } from "./ActionButtons";
 import { ApPips } from "./ApPips";
 import { EclipseTracker } from "./EclipseTracker";
-import { NeonButton } from "./NeonButton";
 import { Tooltip } from "./Tooltip";
 
 type Tab = "status" | "log";
@@ -92,14 +91,7 @@ export function ControlPanel({
   const p = state.players[state.active];
   const meta = SIGNS[p.sign];
   const elc = ELEMENT_META[p.element].color;
-  const discardCost = p.sign === "LIBRA" && !state.libraUsed ? 0 : 1;
-  const purifyAvailable = canPurify(state);
-  const virgoShieldAvailable = canUseVirgoShield(state);
-  const scorpioHealAvailable = canScorpioHeal(state);
-  const convertHandAvailable = canConvertHandEarth(state);
-  const selfHealAvailable = canSelfHeal(state);
   const anyoneInStasis = state.players.some((q) => q.isStasis);
-  const nothingLeftToDo = state.phase === "playing" && !hasAnyAction(state);
   const isScorpioHealTargeting = mode === "scorpioHeal" && healTargeting;
   const scorpioHealTargetingStyle = isScorpioHealTargeting
     ? {
@@ -108,7 +100,6 @@ export function ControlPanel({
       borderColor: "#00ffff"
     }
     : {};
-  const usedTaurus = p.sign === "TAURUS" && !state.taurusPurifyUsed;
   const rosterRef = useRef<HTMLDivElement>(null);
   // Fires once on the rising edge of "heal mode armed with a card selected" (not on every render
   // where it stays true, and not again if the user manually navigates away and back) — jumps to
@@ -189,76 +180,23 @@ export function ControlPanel({
             )}
           </div>
 
-          <div>
-            <div className="flex flex-wrap gap-2" style={{ justifyContent: "center" }}>
-              <NeonButton label={<span><span style={{ textDecoration: "underline" }}>M</span>ove</span>} apCost={1} active={mode === "move"} disabled={state.ap < 1} onClick={() => onMode(mode === "move" ? null : "move")} />
-              <NeonButton
-                label={<span><span style={{ textDecoration: "underline" }}>P</span>urify</span>}
-                apCost={usedTaurus ? undefined : 1}
-                color="#3dd68c"
-                active={mode === "purify"}
-                disabled={!purifyAvailable}
-                tooltip={purifyAvailable ? undefined : purifyDisabledReason(state) ?? undefined}
-                onClick={() => onMode(mode === "purify" ? null : "purify")}
-              />
-              {p.sign === "VIRGO" && (
-                <NeonButton
-                  label={<span>Protecti<span style={{ textDecoration: "underline" }}>v</span>e Precision</span>}
-                  apCost={1}
-                  color="#7dd3fc"
-                  active={mode === "virgoShield"}
-                  disabled={!virgoShieldAvailable}
-                  onClick={() => onMode(mode === "virgoShield" ? null : "virgoShield")}
-                />
-              )}
-              {p.sign === "SCORPIO" && (
-                <NeonButton
-                  label={<span>Discard to <span style={{ textDecoration: "underline" }}>H</span>eal</span>}
-                  color="#ff5f9e"
-                  active={mode === "scorpioHeal"}
-                  disabled={!scorpioHealAvailable}
-                  onClick={() => onMode(mode === "scorpioHeal" ? null : "scorpioHeal")}
-                />
-              )}
-              {p.sign === "CAPRICORN" && (
-                <NeonButton label={<span><span style={{ textDecoration: "underline" }}>T</span>erraform Hand</span>} apCost={1} color="#3dd68c" disabled={!convertHandAvailable} onClick={onConvertHandEarth} />
-              )}
-              {showRotate && <NeonButton label={<span><span style={{ textDecoration: "underline" }}>R</span>otate ↻</span>} color="#e2e8f0" onClick={onRotate} />}
-              <NeonButton
-                label={mode === "discard" ? <span><span style={{ textDecoration: "underline" }}>C</span>onfirm x{discardCount}</span> : <span><span style={{ textDecoration: "underline" }}>C</span>osmic Draw</span>}
-                apCost={discardCost}
-                tooltip={t("controlPanel.cosmicDrawTooltip")}
-                color="#c084fc"
-                disabled={state.ap < discardCost || (mode === "discard" && discardCount === 0)}
-                active={mode === "discard"}
-                onClick={() => (mode === "discard" ? onConfirmDiscard() : onMode("discard"))}
-              />
-              <NeonButton
-                label={
-                  selfHealAvailable ? (
-                    <span>
-                      H<span style={{ textDecoration: "underline" }}>e</span>al {SHOOTING_STAR_SELF_HEAL_AMOUNT} HP
-                    </span>
-                  ) : (
-                    <span>
-                      <span style={{ textDecoration: "underline" }}>E</span>nd Turn
-                    </span>
-                  )
-                }
-                color="#ff00ff"
-                urgent={nothingLeftToDo}
-                onClick={onEndTurn}
-              />
-            </div>
-            <div className={`text-[${BODY_FONT_SIZE}] leading-snug mt-2.5`} style={{ color: "#6d5f94", fontWeight: "bolder" }}>
-              {mode === "move" && t("controlPanel.modeMove")}
-              {mode === "place" && t("controlPanel.modePlace") + (showRotate ? t("controlPanel.modePlaceRebelWave") : "")}
-              {mode === "discard" && t("controlPanel.modeDiscard")}
-              {mode === "purify" && t("controlPanel.modePurify") + (p.sign === "TAURUS" && !state.taurusPurifyUsed ? t("controlPanel.modePurifyFree") : "") + "."}
-              {mode === "virgoShield" && (shieldPreviewActive ? t("controlPanel.modeVirgoConfirm") : t("controlPanel.modeVirgoSelect"))}
-              {mode === "scorpioHeal" && (healTargeting ? t("controlPanel.modeScorpioTarget") : t("controlPanel.modeScorpioSelect"))}
-              {mode === null && t("controlPanel.modeDefault")}
-            </div>
+          {/* Hidden on mobile — GameScreen renders its own copy of ActionButtons in a mobile-only
+              section below the hand panel instead (see that component's own doc comment for why
+              this is the same "render twice, toggle via `md:`" pattern CardHand already uses). */}
+          <div className="hidden md:block">
+            <ActionButtons
+              state={state}
+              mode={mode}
+              onMode={onMode}
+              discardCount={discardCount}
+              onConfirmDiscard={onConfirmDiscard}
+              onEndTurn={onEndTurn}
+              onConvertHandEarth={onConvertHandEarth}
+              showRotate={showRotate}
+              onRotate={onRotate}
+              shieldPreviewActive={shieldPreviewActive}
+              healTargeting={healTargeting}
+            />
           </div>
 
           <div ref={rosterRef} className={`flex flex-col gap-1.5 ${isScorpioHealTargeting ? "rounded border" : ""}`} style={scorpioHealTargetingStyle}>

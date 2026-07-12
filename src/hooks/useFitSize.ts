@@ -6,8 +6,16 @@ import { useLayoutEffect, useRef, useState } from "react";
  * "fit this ratio inside whatever space is left" without container query units, and aspect-ratio
  * auto-sizing shrinks to content instead of growing to fill a flex/grid cell — so we measure
  * directly via ResizeObserver.
+ *
+ * `widthPriority`, when true, skips the height-availability check entirely: width is always
+ * `min(availW, maxWidth)`, and height is derived purely from the aspect ratio, capped only by the
+ * hard `maxHeight` constant (never by the parent's current `clientHeight`). This is for a mobile
+ * portrait wrapper that deliberately has no fixed/min height of its own (so the page can grow past
+ * one viewport and scroll, letting the board use the full available WIDTH instead of being
+ * squeezed narrower by a height budget) — reading `clientHeight` there would be circular anyway,
+ * since with no min-height set it reports 0 until this very board has been sized once.
  */
-export function useFitSize(aspectW: number, aspectH: number, maxWidth: number, maxHeight: number, reservePx = 0) {
+export function useFitSize(aspectW: number, aspectH: number, maxWidth: number, maxHeight: number, reservePx = 0, widthPriority = false) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: maxWidth, height: maxHeight });
 
@@ -26,12 +34,16 @@ export function useFitSize(aspectW: number, aspectH: number, maxWidth: number, m
       // (if tiny) fit means the board stays correctly proportioned and on-screen no matter how
       // little space it's actually given, and the page's own scroll handles the rest.
       const availW = Math.max(parent.clientWidth - reservePx, 1);
-      const availH = Math.max(parent.clientHeight - reservePx, 1);
       let width = Math.min(availW, maxWidth);
       let height = (width * aspectH) / aspectW;
-      if (height > Math.min(availH, maxHeight)) {
-        height = Math.min(availH, maxHeight);
-        width = (height * aspectW) / aspectH;
+      if (widthPriority) {
+        height = Math.min(height, maxHeight);
+      } else {
+        const availH = Math.max(parent.clientHeight - reservePx, 1);
+        if (height > Math.min(availH, maxHeight)) {
+          height = Math.min(availH, maxHeight);
+          width = (height * aspectW) / aspectH;
+        }
       }
       setSize({ width, height });
     };
@@ -39,7 +51,7 @@ export function useFitSize(aspectW: number, aspectH: number, maxWidth: number, m
     const ro = new ResizeObserver(measure);
     ro.observe(parent);
     return () => ro.disconnect();
-  }, [aspectW, aspectH, maxWidth, maxHeight, reservePx]);
+  }, [aspectW, aspectH, maxWidth, maxHeight, reservePx, widthPriority]);
 
   return { ref, ...size };
 }

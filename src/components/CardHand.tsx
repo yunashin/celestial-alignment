@@ -12,6 +12,7 @@ export function CardHand({
   discardSel,
   rotation,
   unaffordableIndices,
+  boardRotated,
   onSelect
 }: {
   player: Player;
@@ -24,6 +25,17 @@ export function CardHand({
   // "virgoShield"/"place" itself), not while it means something else entirely ("discard" marks it
   // for Cosmic Draw, "scorpioHeal" picks it to spend on a heal).
   unaffordableIndices?: Set<number>;
+  // Whether GridBoard is currently rendering its whole-grid 90° visual rotation (see
+  // useIsPortraitViewport/GridBoard's own doc comments). A placed card's connector glyph inherits
+  // that rotation automatically (it's a rigid transform on the whole grid), but a card sitting in
+  // the hand tray is NOT a descendant of the rotated grid — without this, the hand shows a card's
+  // connectors in their un-rotated orientation while the SAME card, once placed, visually appears
+  // rotated 90° on screen. A player reading the hand card as e.g. "horizontal" would then find it
+  // only actually connects vertically once placed — confusing, and exactly backwards from what the
+  // hand is supposed to preview. Rotating just the glyph (not the whole card button) here keeps the
+  // element badge/number legible while making the connector shape shown in hand match how it will
+  // really look once placed on a rotated board.
+  boardRotated?: boolean;
   onSelect: (i: number) => void;
 }) {
   const { t } = useTranslation();
@@ -64,7 +76,9 @@ export function CardHand({
               cursor: placementDisabled ? "not-allowed" : "pointer"
             }}
           >
-            <CardGlyph connections={connections} color={placementDisabled ? "#6d5f94" : c} lit={armed} />
+            <div className="w-full h-full" style={{ transform: boardRotated ? "rotate(90deg)" : undefined }}>
+              <CardGlyph connections={connections} color={placementDisabled ? "#6d5f94" : c} lit={armed} />
+            </div>
             <span className={`absolute top-0.5 left-1 text-[${BODY_FONT_SIZE}px]`} style={{ filter: placementDisabled ? undefined : `drop-shadow(0 0 3px ${c})` }}>
               {ELEMENT_META[card.element].glyph}
             </span>

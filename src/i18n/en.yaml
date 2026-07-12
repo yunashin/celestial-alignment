@@ -40,7 +40,7 @@ setup:
 # underlined-shortcut button labels noted at the top of this file, since a keyboard key isn't a
 # word that has a translation.
 howToPlay:
-  intro: "Celestial Alignment is a local co-op pass-the-mouse (or keyboard) game. Every action can also be triggered entirely from the <b>keyboard</b>! Expand the table below to view the full shortcut list."
+  intro: "Celestial Alignment is a local co-op <b>pass-the-mouse (or keyboard)</b> game. Every action can also be triggered entirely from the keyboard! Expand the table below to view the full shortcut list."
   tip: "Tip:"
   tipContent: "Grab an HDMI cord and play on a large screen! Put 1-2 players on a mouse, and 1-2 players on a keyboard. Or you can play single-player and choose whichever mode and players you'd like!"
   shortcutsToggle: "⌨ Keyboard Shortcuts"
@@ -310,6 +310,11 @@ gameScreen:
   tapToChannel: " Tap to channel"
   astralArrowTooltip: "Astral Arrow: placing here (not adjacent to you) costs {cost} AP"
   moveCostTooltip: "Costs {cost} AP to move here"
+  boardCursorUp: "Move board cursor up"
+  boardCursorDown: "Move board cursor down"
+  boardCursorLeft: "Move board cursor left"
+  boardCursorRight: "Move board cursor right"
+  boardCursorSelect: "Select the highlighted tile"
 
 rules:
   noCorruptedVisited: "No corrupted tile you've personally visited (via Move) is available to purify."

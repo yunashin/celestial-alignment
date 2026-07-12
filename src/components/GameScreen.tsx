@@ -6,6 +6,7 @@ import { gameReducer } from "../engine/reducer";
 import { canConvertHandEarth, canPurify, canScorpioHeal, canUseVirgoShield, getAffordablePlacements, getAffordablePurifyTargets, getValidMoves, hasAnyAction, placementCost } from "../engine/rules";
 import { useTranslation } from "../i18n";
 import type { GameAction, GameState, PowerUp, UiMode } from "../types";
+import { ActionButtons } from "./ActionButtons";
 import { ApBadge } from "./ApBadge";
 import { CardHand } from "./CardHand";
 import { ControlPanel } from "./ControlPanel";
@@ -14,6 +15,7 @@ import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
+import { useIsMobileViewport } from "../hooks/useIsMobileViewport";
 import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SeedDisplay } from "./SeedDisplay";
@@ -59,6 +61,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
   // one is the whole-board 90° layout rotation for narrow/portrait viewports (see GridBoard).
   const boardRotated = useIsPortraitViewport();
+  // Distinct from `boardRotated` above (which tracks aspect ratio, not width) — this is the JS
+  // equivalent of the `md:` Tailwind breakpoint already used throughout this file's mobile/desktop
+  // split, threaded into GridBoard so it can size the board by available WIDTH alone on mobile
+  // (see useFitSize's `widthPriority` doc comment).
+  const isMobile = useIsMobileViewport();
 
   // A fresh turn starts the keyboard board-cursor over: the previous player's arrow-key position
   // isn't a meaningful default for whoever's turn it is now. Also clears once the game leaves
@@ -402,6 +409,49 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const showRotate = mode === "place" && selectedCard !== null && active.sign === "AQUARIUS";
   const onRotateCard = () => setRotation((r) => ((r ?? 0) + 1) % 4);
 
+  // Steps the keyboard board-cursor one tile in a screen-relative direction — shared by the arrow
+  // keys (below) and the mobile-only on-screen arrow buttons, so both drive the exact same cursor
+  // state through the exact same rotation-aware remap. `dir` is always screen-relative ("up" always
+  // means visually up), matching physical arrow keys; the boardRotated remap is what keeps that
+  // true once the board itself is visually rotated 90° for portrait viewports.
+  const moveBoardCursor = (dir: "up" | "down" | "left" | "right") => {
+    if (state.phase !== "playing") return;
+    // Reaching for the board means the user wants the board cursor now, not whatever action
+    // button currently has focus — blur it so a subsequent Enter/Space (or, for the on-screen
+    // buttons, the button's own retained focus) doesn't re-trigger that button instead of hitting
+    // the board tile.
+    if (document.activeElement instanceof HTMLButtonElement) document.activeElement.blur();
+    setBoardCursor((prev) => {
+      const base = prev ?? { x: active.position.x, y: active.position.y };
+      let { x, y } = base;
+      // A rotated board (see GridBoard/boardRotated) visually swaps which data axis reads as
+      // "up/down" vs "left/right" on screen — WATER (y=0) is now the top edge and EARTH
+      // (x=HEIGHT-1) the left edge, not AIR (x=0)/WATER (y=0) as in the unrotated layout — so this
+      // remap keeps the cursor moving the way it visually points, instead of silently stepping
+      // "up" sideways once the board is rotated.
+      if (boardRotated) {
+        if (dir === "up") y -= 1;
+        else if (dir === "down") y += 1;
+        else if (dir === "left") x += 1;
+        else if (dir === "right") x -= 1;
+      } else {
+        if (dir === "up") x -= 1;
+        else if (dir === "down") x += 1;
+        else if (dir === "left") y -= 1;
+        else if (dir === "right") y += 1;
+      }
+      return { x: Math.max(0, Math.min(HEIGHT - 1, x)), y: Math.max(0, Math.min(WIDTH - 1, y)) };
+    });
+  };
+
+  // Activates whatever tile the board cursor currently sits on — the mobile on-screen equivalent
+  // of the Enter/Space case in the keydown handler below (`onTileClick` already no-ops on a
+  // non-highlighted tile, so this is safe to call unconditionally once there IS a cursor). A no-op
+  // if the D-pad hasn't been used yet this turn (no cursor to select), same as Enter/Space would be.
+  const selectBoardCursor = () => {
+    if (boardCursor) onTileClick(boardCursor.x, boardCursor.y);
+  };
+
   useEffect(() => {
     if (state.phase !== "playing") return;
     const p = state.players[state.active];
@@ -457,37 +507,19 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           break;
         // Arrow keys drive a keyboard-only board cursor (see cursorFocused/TileView) — first press
         // snaps it to the active player's own tile, subsequent presses step it one tile at a time.
+        // The actual step logic lives in `moveBoardCursor` (shared with the mobile on-screen arrow
+        // buttons, see the section right above the board's hand panel).
         case "arrowup":
+          moveBoardCursor("up");
+          break;
         case "arrowdown":
+          moveBoardCursor("down");
+          break;
         case "arrowleft":
+          moveBoardCursor("left");
+          break;
         case "arrowright":
-          // Reaching for the board with arrow keys means the user wants the board cursor now, not
-          // whatever action button Tab last landed them on — blur it so the next Enter/Space hits
-          // the board tile instead of re-triggering that button (the "enter"/" " case below already
-          // defers to a focused button on purpose, so leaving it focused here would trap Enter/Space
-          // right back on the button forever).
-          if (document.activeElement instanceof HTMLButtonElement) document.activeElement.blur();
-          setBoardCursor((prev) => {
-            const base = prev ?? { x: p.position.x, y: p.position.y };
-            let { x, y } = base;
-            // A rotated board (see GridBoard/boardRotated) visually swaps which data axis reads as
-            // "up/down" vs "left/right" on screen — WATER (y=0) is now the top edge and EARTH
-            // (x=HEIGHT-1) the left edge, not AIR (x=0)/WATER (y=0) as in the unrotated layout — so
-            // the arrow keys need the matching remap to keep moving the cursor the way it visually
-            // points, instead of silently stepping "up" sideways once the board is rotated.
-            if (boardRotated) {
-              if (k === "arrowup") y -= 1;
-              else if (k === "arrowdown") y += 1;
-              else if (k === "arrowleft") x += 1;
-              else if (k === "arrowright") x -= 1;
-            } else {
-              if (k === "arrowup") x -= 1;
-              else if (k === "arrowdown") x += 1;
-              else if (k === "arrowleft") y -= 1;
-              else if (k === "arrowright") y += 1;
-            }
-            return { x: Math.max(0, Math.min(HEIGHT - 1, x)), y: Math.max(0, Math.min(WIDTH - 1, y)) };
-          });
+          moveBoardCursor("right");
           break;
         // Enter/Space activate the cursor's tile exactly like clicking it — freeing Enter up from
         // End Turn (now "E") is what makes on-board keyboard selection possible at all. BUT if a
@@ -602,17 +634,24 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
         {state.phase === "won" && <WinBanner onReset={doBack} />}
 
-        {/* `min-h-[420px]` keeps the board itself from being squeezed down to an unusably tiny
-            sliver on a short mobile viewport, now that the page can scroll (see the root div's own
-            comment above) instead of everything having to cram into exactly one viewport height —
-            in practice this floor, not `flex-1`'s growth, is what determines the board's actual
-            mobile size: the header + status/deck row + hand panel + ControlPanel's own natural
-            height already exceed a typical phone's viewport on their own, so there's rarely genuine
-            leftover space for `flex-1` to distribute. Sized generously (rather than just "not
-            broken") specifically so the board reads as the dominant, most-important element on
-            screen, per the general mobile-layout goal of keeping everything ABOVE the hand panel as
-            compact as legibly possible so the board gets the lion's share of the space. */}
-        <div ref={boardWrapRef} className="flex-1 min-h-[420px] flex items-center justify-center">
+        {/* Below `md:` (mobile), no min-height/flex-grow drives this box at all — `widthPriority`
+            (passed to GridBoard, see useFitSize's own doc comment) sizes the board to the full
+            available WIDTH instead, deriving height from the aspect ratio, so the board — and each
+            tile in it — is as large as the viewport's width allows rather than being squeezed
+            narrower by a height budget. The page already scrolls on mobile (see the root div's own
+            comment above), so the extra height that comes with a full-width board is exactly the
+            trade this makes: width (and therefore tile size) wins, height follows and the rest of
+            the page moves down to make room. `md:min-h-[420px] md:flex-1` restores the ORIGINAL
+            height-first fit on desktop, where the layout is a fixed-viewport row (`md:h-dvh
+            md:overflow-hidden`) and a stable height genuinely matters there. */}
+        {/* `my-7` (mobile only) reserves clearance for the edge labels (AIR/EARTH/WATER/FIRE, or
+            their rotated equivalents), which are positioned via absolute overflow OUTSIDE this
+            wrapper's own box (see GridBoard's EdgeLabel, `calc(100% + 0.6rem)`) — without it, a
+            board sized to the full available width (see `widthPriority` above) sits close enough
+            to its neighboring sections that a top/bottom edge label's overflow bleeds through their
+            semi-transparent backgrounds. Not needed on desktop, where the wrapper already had
+            plenty of surrounding slack from its `md:min-h-[420px]` floor. */}
+        <div ref={boardWrapRef} className="md:flex-1 md:min-h-[420px] my-7 md:my-0 flex items-center justify-center">
           <GridBoard
             state={state}
             highlights={highlights}
@@ -626,8 +665,61 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             apCostTiles={apCostTiles}
             cursorTile={boardCursor}
             rotated={boardRotated}
+            widthPriority={isMobile}
             onTileClick={onTileClick}
           />
+        </div>
+
+        {/* Mobile-only D-pad, occupying the hand panel's usual spot so it reads as the same kind of
+            control surface — same outer card styling as the hand panel just below it, minus the
+            header, with each button sized/shaped exactly like a Star Card in hand (see CardHand's
+            own button className). The 4 arrows drive the same `moveBoardCursor` the arrow keys use,
+            remapped for `boardRotated` the same way, so a tap always moves the cursor the direction
+            it visually points regardless of board orientation. The 5th button (right of ▶, visually
+            set apart in cyan) is the touch equivalent of Enter/Space — activates whatever tile the
+            cursor is currently on, exactly like the keyboard does. */}
+        <div className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
+          <div className="flex gap-2 sm:gap-3 justify-center">
+            {(
+              [
+                { dir: "left", glyph: "◀" },
+                { dir: "up", glyph: "▲" },
+                { dir: "down", glyph: "▼" },
+                { dir: "right", glyph: "▶" }
+              ] as const
+            ).map(({ dir, glyph }) => (
+              <button
+                key={dir}
+                onClick={() => moveBoardCursor(dir)}
+                aria-label={t(`gameScreen.boardCursor${dir[0].toUpperCase()}${dir.slice(1)}`)}
+                className="relative w-14 h-[4.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
+                style={{
+                  borderColor: "#3b2d5e",
+                  background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
+                  boxShadow: "0 0 6px #3b2d5e55",
+                  color: "#a99cd4"
+                }}
+              >
+                {glyph}
+              </button>
+            ))}
+            <button
+              onClick={selectBoardCursor}
+              disabled={!boardCursor}
+              aria-label={t("gameScreen.boardCursorSelect")}
+              className="relative w-14 h-[4.5rem] shrink-0 rounded-lg border-2 p-1.5 flex items-center justify-center text-2xl"
+              style={{
+                borderColor: boardCursor ? "#5eb3ff" : "#3b2d5e",
+                background: "linear-gradient(160deg, rgba(30,22,52,0.95), rgba(11,9,20,0.95))",
+                boxShadow: boardCursor ? "0 0 10px #5eb3ff88" : "none",
+                color: boardCursor ? "#5eb3ff" : "#3b2d5e",
+                opacity: boardCursor ? 1 : 0.5,
+                cursor: boardCursor ? "pointer" : "not-allowed"
+              }}
+            >
+              ✓
+            </button>
+          </div>
         </div>
 
         <div
@@ -635,10 +727,30 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden"
           style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)", animation: starFlash === "BONUS_HAND" ? "caStarFlash 3s ease-out" : undefined }}
         >
-          <div className={`text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase text-center mb-2`} style={{ color: "#6d5f94" }}>
+          <div className={`text-[10px] sm:text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase text-center mb-1 sm:mb-2`} style={{ color: "#6d5f94" }}>
             {mode === "discard" ? t("gameScreen.handHeaderDiscard", { name: active.name }) : t("gameScreen.handHeaderChannel", { name: active.name })}
           </div>
-          <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} onSelect={onHandSelect} />
+          <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
+        </div>
+
+        {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn), positioned below the
+            hand panel — see ActionButtons' own doc comment for why this is a second live copy
+            rather than the desktop one repositioned via CSS alone (ControlPanel's own copy is
+            `hidden md:block`, the mirror image of this `md:hidden`). */}
+        <div className="rounded-xl border p-2 sm:p-2.5 shrink-0 md:hidden" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.85)" }}>
+          <ActionButtons
+            state={state}
+            mode={mode}
+            onMode={setUiMode}
+            discardCount={discardSel.size}
+            onConfirmDiscard={doConfirmDiscard}
+            onEndTurn={requestEndTurn}
+            onConvertHandEarth={doConvertHandEarth}
+            showRotate={showRotate}
+            onRotate={onRotateCard}
+            shieldPreviewActive={mode === "virgoShield" && shieldPreview !== null}
+            healTargeting={healTargeting}
+          />
         </div>
       </div>
 
@@ -651,7 +763,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           {mode !== 'discard' && mode !== 'scorpioHeal' && <ApBadge cost="1" color="#6d5f94" />}
           {mode === "discard" ? t("gameScreen.tapToDiscard") : mode === "scorpioHeal" ? t("gameScreen.pickACard") : t("gameScreen.tapToChannel")}
         </span>
-        <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} onSelect={onHandSelect} />
+        <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
       </div>
 
       <div className="w-full md:w-72 shrink-0 md:overflow-y-auto">
