@@ -428,105 +428,105 @@ export function TileView({
           is exactly what "stay readable" means for them. */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
         {tile.isAsteroid && (
-        <Tooltip title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
-          <span className="text-xs sm:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
-            🪨
-          </span>
-        </Tooltip>
-      )}
+          <Tooltip title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
+            <span className="text-xs sm:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
+              🪨
+            </span>
+          </Tooltip>
+        )}
 
-      {tile.isVoid && (
-        <Tooltip title={t("tileView.voidTitle")} text={t("tileView.voidText")}>
-          <span className="text-xs sm:text-lg" style={{ animation: "caSpin 5s linear infinite", filter: "drop-shadow(0 0 8px #a855f7)" }}>
-            🕳️
-          </span>
-        </Tooltip>
-      )}
+        {tile.isVoid && (
+          <Tooltip title={t("tileView.voidTitle")} text={t("tileView.voidText")}>
+            <span className="text-xs sm:text-lg" style={{ animation: "caSpin 5s linear infinite", filter: "drop-shadow(0 0 8px #a855f7)" }}>
+              🕳️
+            </span>
+          </Tooltip>
+        )}
 
-      {tile.isShootingStar && (
-        <Tooltip title={t("tileView.shootingStarTitle")} text={tile.powerUp ? powerUpText(t, tile.powerUp) : undefined}>
-          <span className="text-xs sm:text-lg" style={{ animation: "caPulse 1.3s ease-in-out infinite", filter: "drop-shadow(0 0 8px #ffd166)" }}>
-            💫
-          </span>
-        </Tooltip>
-      )}
+        {tile.isShootingStar && (
+          <Tooltip title={t("tileView.shootingStarTitle")} text={tile.powerUp ? powerUpText(t, tile.powerUp) : undefined}>
+            <span className="text-xs sm:text-lg" style={{ animation: "caPulse 1.3s ease-in-out infinite", filter: "drop-shadow(0 0 8px #ffd166)" }}>
+              💫
+            </span>
+          </Tooltip>
+        )}
 
-      {tile.isShootingStar && tile.powerUp === "TRACKER_DOWN" && (
-        <Tooltip className="absolute right-0 z-10" text={powerUpText(t, tile.powerUp)} style={{ top: -6 }}>
-          <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
-            ☽
-          </span>
-        </Tooltip>
-      )}
-      {tile.isShootingStar && tile.powerUp === "BONUS_AP" && (
-        <Tooltip className="absolute right-0 z-10" text={powerUpText(t, tile.powerUp)} style={{ top: -6 }}>
-          <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
-            ◇
-          </span>
-        </Tooltip>
-      )}
-      {tile.isShootingStar && tile.powerUp === "BONUS_HAND" && (
-        <Tooltip className="absolute right-0 z-10" text={powerUpText(t, tile.powerUp)} style={{ top: -6 }}>
-          <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
-            ☆
-          </span>
-        </Tooltip>
-      )}
-      {tile.isShootingStar && tile.powerUp === "HEAL_UNLOCK" && (
-        <Tooltip className="absolute right-0 z-10" text={powerUpText(t, tile.powerUp)} style={{ top: -6 }}>
-          <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
-            ♡
-          </span>
-        </Tooltip>
-      )}
+        {tile.isShootingStar && tile.powerUp === "TRACKER_DOWN" && (
+          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+              ☽
+            </span>
+          </Tooltip>
+        )}
+        {tile.isShootingStar && tile.powerUp === "BONUS_AP" && (
+          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+              ◇
+            </span>
+          </Tooltip>
+        )}
+        {tile.isShootingStar && tile.powerUp === "BONUS_HAND" && (
+          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+              ☆
+            </span>
+          </Tooltip>
+        )}
+        {tile.isShootingStar && tile.powerUp === "HEAL_UNLOCK" && (
+          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+            <span className="leading-none text-[8px] sm:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
+              ♡
+            </span>
+          </Tooltip>
+        )}
 
-      {apCostBadge && (
-        <Tooltip className="absolute left-1/2 -translate-x-1/2 z-10" text={apCostBadge.tooltip}>
-          <ApBadge color="#00ffff" cost={apCostBadge.cost} isForTileView={true} />
-        </Tooltip>
-      )}
+        {apCostBadge && (
+          <Tooltip className="absolute left-1/2 -translate-x-1/2 z-10 inline-flex" text={apCostBadge.tooltip}>
+            <ApBadge color="#00ffff" cost={apCostBadge.cost} isForTileView={true} />
+          </Tooltip>
+        )}
 
-      {tile.isLocked && (
-        <Tooltip className="absolute right-0 z-10" title={t("tileView.lockedTitle")} text={t("tileView.lockedText")} style={{ top: -6 }}>
-          <span className="leading-none text-[7px] sm:text-[10px]" style={{ color: "#3dd68c", textShadow: "0 0 5px #3dd68c" }}>
-            ◈
-          </span>
-        </Tooltip>
-      )}
+        {tile.isLocked && (
+          <Tooltip className="absolute right-px top-px z-10 inline-flex" title={t("tileView.lockedTitle")} text={t("tileView.lockedText")}>
+            <span className="leading-none text-[7px] sm:text-[10px]" style={{ color: "#3dd68c", textShadow: "0 0 5px #3dd68c" }}>
+              ◈
+            </span>
+          </Tooltip>
+        )}
 
-      {tile.isShielded && (
-        <Tooltip className="absolute left-0 z-10" title={t("tileView.shieldedTitle")} text={t("tileView.shieldedText")} style={{ top: -6 }}>
-          <span className="leading-none text-[8px] sm:text-xs" style={{ filter: "drop-shadow(0 0 4px #7dd3fc)" }}>
-            🛡️
-          </span>
-        </Tooltip>
-      )}
+        {tile.isShielded && (
+          <Tooltip className="absolute left-px top-px z-10 inline-flex" title={t("tileView.shieldedTitle")} text={t("tileView.shieldedText")}>
+            <span className="leading-none text-[8px] sm:text-xs" style={{ filter: "drop-shadow(0 0 4px #7dd3fc)" }}>
+              🛡️
+            </span>
+          </Tooltip>
+        )}
 
-      {lunarShielded && (
-        <Tooltip
-          className="absolute bottom-0 right-0 z-10"
-          side="right"
-          title={t("tileView.lunarShieldTitle")}
-          text={t("tileView.lunarShieldText")}
-        >
-          <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #5eb3ff)" }}>
-            🌊
-          </span>
-        </Tooltip>
-      )}
+        {lunarShielded && (
+          <Tooltip
+            className="absolute bottom-0 right-0 z-10 inline-flex"
+            side="right"
+            title={t("tileView.lunarShieldTitle")}
+            text={t("tileView.lunarShieldText")}
+          >
+            <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #5eb3ff)" }}>
+              🌊
+            </span>
+          </Tooltip>
+        )}
 
-      {tile.isEnclosed && (
-        <Tooltip
-          className="absolute bottom-0 left-0 z-10"
-          side="right"
-          title={t("tileView.enclosedTitle")}
-          text={t("tileView.enclosedText")}
-        >
-          <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #fbbf24)" }}>
-            🔒
-          </span>
-        </Tooltip>
-      )}
+        {tile.isEnclosed && (
+          <Tooltip
+            className="absolute bottom-0 left-0 z-10 inline-flex"
+            side="right"
+            title={t("tileView.enclosedTitle")}
+            text={t("tileView.enclosedText")}
+          >
+            <span className="leading-none text-[7px] sm:text-[10px]" style={{ filter: "drop-shadow(0 0 4px #fbbf24)" }}>
+              🔒
+            </span>
+          </Tooltip>
+        )}
 
         <PlayerTokens playersHere={playersHere} activeId={activeId} lastActedId={lastActedId} />
       </div>

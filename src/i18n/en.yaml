@@ -29,8 +29,11 @@ setup:
   surgeHeading: "⚡️ {label} Surge"
   surgeSentence: "Place {article} card to {surgeText}"
   playerNamePlaceholder: "Guardian {n}"
+  playerSignSelectLabel: "Guardian {n} sign"
   duplicateElementsWarning: "Each Guardian needs a different element — the win condition requires one path per player element."
   howToPlayTab: "✦ How to Play"
+  resetToDefaults: "Reset to Defaults"
+  resetToDefaultsTooltip: "Clear saved names/signs for this player count and restore the default lineup."
 
 # The Setup Screen's "How to Play" tab — a static rules/lore reference, not gameplay state, so
 # unlike log/* this never needs interpolation params beyond the handful of difficulty-tuning
@@ -315,6 +318,8 @@ gameScreen:
   boardCursorLeft: "Move board cursor left"
   boardCursorRight: "Move board cursor right"
   boardCursorSelect: "Select the highlighted tile"
+  dpadHide: "Hide board navigation controls"
+  dpadShow: "Show board navigation controls"
 
 rules:
   noCorruptedVisited: "No corrupted tile you've personally visited (via Move) is available to purify."

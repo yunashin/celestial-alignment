@@ -37,7 +37,7 @@ export function SeedDisplay({
       text={t("seedDisplay.copyTooltip")}
       side={side}
     >
-      <button onClick={copy} className={`text-[${BODY_FONT_SIZE}] tracking-widest uppercase`}>
+      <button onClick={copy} className={`sm:text-base md:text-[${BODY_FONT_SIZE}] tracking-widest uppercase`}>
         {copied ? t("seedDisplay.copiedLabel") : t("seedDisplay.seedLabel", { seed })}
       </button>
     </Tooltip>

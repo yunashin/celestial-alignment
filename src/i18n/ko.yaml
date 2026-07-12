@@ -36,8 +36,11 @@ setup:
   surgeHeading: "⚡️ {label} 서지"
   surgeSentence: "카드를 배치하여 {surgeText}"
   playerNamePlaceholder: "가디언 {n}"
+  playerSignSelectLabel: "가디언 {n} 별자리"
   duplicateElementsWarning: "가디언은 서로 다른 원소를 선택해야 합니다. 승리하려면 플레이어당 하나의 원소 경로가 연결되어야 합니다."
   howToPlayTab: "✦ 게임 방법"
+  resetToDefaults: "기본값으로 재설정"
+  resetToDefaultsTooltip: "이 인원 수에 저장된 이름/별자리를 지우고 기본 구성으로 되돌립니다."
 
 howToPlay:
   intro: "셀레스티얼 얼라인먼트는 <b>마우스(또는 키보드)를 서로 주고받으며 즐기는</b> 로컬 협동 게임입니다. 모든 동작은 키보드만으로도 실행할 수 있습니다! 아래 표를 펼쳐 전체 단축키 목록을 확인해 보세요."
@@ -312,6 +315,8 @@ gameScreen:
   boardCursorLeft: "보드 커서를 왼쪽으로 이동"
   boardCursorRight: "보드 커서를 오른쪽으로 이동"
   boardCursorSelect: "강조 표시된 타일 선택"
+  dpadHide: "보드 탐색 컨트롤 숨기기"
+  dpadShow: "보드 탐색 컨트롤 표시"
 
 rules:
   noCorruptedVisited: "직접 방문(이동)한 타일 중에서는 현재 정화할 수 있는 오염된 타일이 없습니다."
