@@ -70,7 +70,7 @@ function FavoriteSeedRow({
           style={{ borderColor: "#5eb3ff", background: "#0b0914", color: "#f1eeff" }}
         />
       ) : (
-        <Tooltip className="flex-1 min-w-0 text-left text-xs truncate" text={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltip") : t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="left">
+        <Tooltip className="flex-1 min-w-0 text-left text-xs truncate" text={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltip") : t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="right">
           <button type="button" onClick={() => onUse(fav.seed)} className="w-full text-left" style={{ color: "#c084fc" }}>
             {isFav ? "★" : "☆"} {fav.nickname} {isDefaultRecommendedSeed && "✦"}
           </button>
