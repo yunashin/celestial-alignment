@@ -85,6 +85,7 @@ export function Tooltip({
 }) {
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const popupRef = useRef<HTMLSpanElement>(null);
+  const idRef = useRef<number>(0);
   const [visible, setVisible] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [userInteracted, setUserInteracted] = useState(false);
@@ -107,8 +108,50 @@ export function Tooltip({
 
   useEffect(() => {
     if (!text || userInteracted) return;
-    if (openWhen) show();
-    else hide();
+    if (!openWhen) {
+      hide();
+      return;
+    }
+    // Polls the trigger's own position every animation frame and only calls `show()` once it's
+    // stayed put for two consecutive frames, instead of calling `show()` synchronously here.
+    // `openWhen` can (and for PlayerTokens' auto-open on the very first active Guardian, always
+    // does) go true on the SAME commit as initial mount, before layout has necessarily finished
+    // settling — a trigger positioned by a ResizeObserver-driven hook (e.g. GridBoard's
+    // useFitSize, which sizes the whole board and everything on it) can keep shifting for several
+    // more frames after this component's own effects have already run once, since ResizeObserver
+    // callbacks are their own async batch, not part of React's commit. Measuring
+    // `getBoundingClientRect()` immediately reliably captured a stale pre-settle position that
+    // then never got refreshed (nothing else calls `show()` again until the user manually
+    // hovers/focuses this specific tooltip) — a real bug reported against Guardian 1's auto-opened
+    // token tooltip landing over a hundred pixels away from the actual token. A FIXED number of
+    // deferred frames was tried first and wasn't robust: instrumenting the actual trigger position
+    // frame-by-frame on a real board showed it can take 6+ frames to stop moving, and that count
+    // isn't guaranteed stable across boards/devices — so this polls for real settling instead of
+    // guessing a delay, capped at MAX_SETTLE_FRAMES so a trigger that's continuously animating for
+    // some unrelated reason can't keep the popup from ever opening.
+    let cancelled = false;
+    let last: { x: number; y: number } | null = null;
+    let stableFrames = 0;
+    let frame = 0;
+    const MAX_SETTLE_FRAMES = 60;
+    const tick = () => {
+      if (cancelled || !wrapperRef.current) return;
+      const r = wrapperRef.current.getBoundingClientRect();
+      if (last && r.x === last.x && r.y === last.y) stableFrames++;
+      else stableFrames = 0;
+      last = { x: r.x, y: r.y };
+      frame++;
+      if (stableFrames >= 2 || frame >= MAX_SETTLE_FRAMES) {
+        show();
+        return;
+      }
+      idRef.current = requestAnimationFrame(tick);
+    };
+    idRef.current = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(idRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openWhen, userInteracted, text]);
 
