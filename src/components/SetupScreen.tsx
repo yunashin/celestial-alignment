@@ -260,9 +260,9 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                 </button>
               </Tooltip>
             </div>
-            {filteredFavorites.length > 0 && (
+            {(filteredFavorites.length > 0 || RECOMMENDED_SEEDS.length > 0) && (
               <div className="flex flex-col gap-1 mt-1">
-                {filteredFavorites.map((fav) => (
+                {filteredFavorites.length > 0 && filteredFavorites.map((fav) => (
                   <FavoriteSeedRow key={fav.id} fav={fav} seed={seed} t={t} onUse={setSeed} onRemove={removeFavorite} onRename={renameFavorite} />
                 ))}
                 {RECOMMENDED_SEEDS.length > 0 && (
