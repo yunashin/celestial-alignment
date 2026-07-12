@@ -1,4 +1,14 @@
 export const GLOBAL_CSS = `
+/* Belt-and-suspenders against accidental horizontal scroll on mobile (a vertical swipe
+   occasionally "catching" sideways drift) — App.tsx's own root div also gets overflow-x-hidden/
+   touch-pan-y/overscroll-x-none directly, but html/body need this too since they're a SEPARATE
+   scrollable box any stray overflow-causing element (now or added later) could scroll within,
+   outside App's own container. */
+html, body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  max-width: 100%;
+}
 @keyframes caPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes caSpin { to { transform: rotate(360deg); } }
 @keyframes caFlow { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
