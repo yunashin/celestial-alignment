@@ -8,16 +8,15 @@ const PileIcon = forwardRef<HTMLDivElement, { glyph: string; count: number; colo
     <Tooltip text={tooltip} side="bottom">
       <div
         ref={ref}
-        className="flex flex-col items-center gap-1.5 px-2 py-1 rounded-lg border"
+        className="flex flex-col items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border w-8 sm:w-10"
         style={{
           borderColor: `${color}66`,
           background: `linear-gradient(180deg, ${color}2e, rgba(16,12,30,0.85) 70%)`,
           boxShadow: `0 0 8px ${color}33`,
-          animation: shuffling ? "caDeckShuffle 0.5s ease-in-out" : undefined,
-          width: '40px',
+          animation: shuffling ? "caDeckShuffle 0.5s ease-in-out" : undefined
         }}
       >
-        <span className="text-sm sm:text-base leading-none" style={{ color, filter: `drop-shadow(0 0 4px ${color})` }}>
+        <span className="text-xs sm:text-base leading-none" style={{ color, filter: `drop-shadow(0 0 4px ${color})` }}>
           {glyph}
         </span>
         <span className={`text-[${BODY_FONT_SIZE}] font-bold tabular-nums leading-none`} style={{ color }}>
