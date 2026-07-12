@@ -1,15 +1,18 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Tooltip } from "./Tooltip";
 
-const EDGE_MARGIN = 8;
+const EDGE_MARGIN = 28;
 const GAP = 4;
-const MIN_LIST_HEIGHT = 120;
+const MIN_LIST_HEIGHT = 200;
 const MAX_LIST_HEIGHT = 320;
 
 export interface SelectOption<T extends string> {
   value: T;
   label: ReactNode;
   color?: string;
+  tooltipText?: string;
+  tooltipTitle?: string;
 }
 
 /**
@@ -102,7 +105,6 @@ export function Select<T extends string>({
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("mousedown", onDown);
@@ -131,7 +133,7 @@ export function Select<T extends string>({
           <ul
             ref={listRef}
             role="listbox"
-            className="fixed z-50 overflow-y-auto rounded-lg border py-1"
+            className="fixed z-9 overflow-y-auto overflow-x-hidden rounded-lg border py-1"
             style={{
               left: pos.left,
               top: pos.openUp ? undefined : pos.anchorY,
@@ -140,19 +142,22 @@ export function Select<T extends string>({
               maxHeight: pos.maxHeight,
               borderColor: "#3b2d5e",
               background: "#140f24",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.6)"
+              boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+              scrollbarWidth: 'none'
             }}
           >
             {options.map((o) => (
               <li key={o.value} role="option" aria-selected={o.value === value}>
-                <button
-                  type="button"
-                  onClick={() => pick(o.value)}
-                  className="w-full text-left px-3 py-2.5 text-base font-bold"
-                  style={{ color: o.color ?? "#f1eeff", background: o.value === value ? "#3b2d5e" : "transparent" }}
-                >
-                  {o.label}
-                </button>
+                <Tooltip className="w-full" title={o.tooltipTitle} text={o.tooltipText} side="left">
+                  <button
+                    type="button"
+                    onClick={() => pick(o.value)}
+                    className="w-full text-left px-3 py-2.5 text-base font-bold"
+                    style={{ color: o.color ?? "#f1eeff", background: o.value === value ? "#3b2d5e" : "transparent" }}
+                  >
+                    {o.label}
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>,
