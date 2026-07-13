@@ -79,8 +79,12 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const isMobile = useIsMobileViewport();
   // Pinch-to-zoom + drag-to-pan, scoped to just the board (see the hook's own doc comment for why
   // native page pinch-zoom had to be disabled site-wide, in index.html, in favor of this) — only
-  // active on mobile, since desktop has no touch gestures to hijack in the first place.
-  const boardZoom = usePinchZoomPan(isMobile);
+  // active on mobile, since desktop has no touch gestures to hijack in the first place. Resets
+  // whenever `state.active` changes (a new turn) — otherwise a previous player's zoom/pan could
+  // leave the new active player's own tile clipped out of view in a way the scroll-into-view
+  // effect below has no way to undo on its own (that one only adjusts the top pane's native
+  // scroll; it can't touch this hook's separate CSS-transform-based pan).
+  const boardZoom = usePinchZoomPan(isMobile, state.active);
 
   // A fresh turn starts the keyboard board-cursor over: the previous player's arrow-key position
   // isn't a meaningful default for whoever's turn it is now. Also clears once the game leaves
@@ -89,6 +93,22 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   useEffect(() => {
     setBoardCursor(null);
   }, [state.active, state.phase]);
+
+  // Scrolls the new active player's own board tile into view whenever a turn starts, if it's
+  // currently scrolled out of view — the top pane's own vertical scroll (used to reach the
+  // board's bottom edge when the board is taller than the available height, see the top pane's
+  // own doc comment further down) doesn't otherwise track whose turn it is, so a player who
+  // scrolled down to see a distant part of the board on someone else's turn could otherwise start
+  // their own turn looking at a completely different part of the map. `block`/`inline: "nearest"`
+  // make this a true no-op if the tile's already visible, rather than force-centering it every
+  // turn. Mobile only — desktop's top pane never scrolls (`md:overflow-visible`), so this would be
+  // an inert no-op there anyway.
+  useEffect(() => {
+    if (!isMobile) return;
+    const tileEl = document.querySelector<HTMLElement>(`[data-tile="${active.position.x},${active.position.y}"]`);
+    tileEl?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.active, isMobile]);
 
   const starDeckRef = useRef<HTMLDivElement>(null);
   const eclipseDeckRef = useRef<HTMLDivElement>(null);
@@ -723,7 +743,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
                 centers GridBoard's own (smaller, explicitly pixel-sized) box within this now-
                 full-size wrapper — `containerRef`'s own centering would otherwise be inert, since
                 `contentRef` fills 100% of it either way. */}
-            <div ref={boardZoom.contentRef} className="w-full h-full flex items-center justify-center" style={boardZoom.contentStyle}>
+            <div ref={boardZoom.contentRef} className="w-full h-full flex items-center justify-center pb-4" style={boardZoom.contentStyle}>
               <GridBoard
                 state={state}
                 highlights={highlights}
@@ -804,7 +824,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           own `flex-1`, exactly like the D-pad's own collapse further down. */}
       <div
         className="shrink-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:contents md:h-auto"
-        style={isMobile ? { height: bottomPaneVisible ? "30dvh" : 0, transition: "height 300ms ease-in-out" } : undefined}
+        style={isMobile ? { height: bottomPaneVisible ? "34dvh" : 0, transition: "height 300ms ease-in-out" } : undefined}
       >
         {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn) — see ActionButtons'
             own doc comment for why this is a second live copy rather than the desktop one
@@ -828,6 +848,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           />
         </div>
 
+        {/* Mobile-only card hand */}
         <div
           ref={handMobileRef}
           className="rounded-xl border p-2 shrink-0 md:hidden"

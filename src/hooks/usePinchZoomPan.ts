@@ -57,9 +57,19 @@ function mid(a: Touch, b: Touch): { x: number; y: number } {
  * Re-clamps (not resets) the current zoom/pan whenever the container resizes (board rotation,
  * window resize, the D-pad/bottom-pane drawers collapsing and freeing space) so a player who's
  * zoomed in doesn't get silently snapped back to 1x just because the available space changed —
- * only an explicit double-tap, or `enabled` turning false (e.g. leaving mobile width), resets it.
+ * only an explicit double-tap, `enabled` turning false (e.g. leaving mobile width), or `resetKey`
+ * changing identity resets it outright.
+ *
+ * `resetKey` (optional) is compared by `===` across renders — pass something like `state.active`
+ * so a new turn always resets any zoom/pan the PREVIOUS player left behind, ensuring the new
+ * active player's own tile is at least reachable by GameScreen's own scroll-into-view effect
+ * (which only adjusts the top pane's native scroll, and has no way to undo a leftover CSS
+ * transform pan on its own).
  */
-export function usePinchZoomPan(enabled: boolean): {
+export function usePinchZoomPan(
+  enabled: boolean,
+  resetKey?: unknown
+): {
   containerRef: RefObject<HTMLDivElement>;
   contentRef: RefObject<HTMLDivElement>;
   containerStyle: CSSProperties;
@@ -219,6 +229,17 @@ export function usePinchZoomPan(enabled: boolean): {
   useEffect(() => {
     if (!enabled) setZoom(REST);
   }, [enabled]);
+
+  // Resets whenever `resetKey` changes identity (e.g. a new turn) — skipped on the very first
+  // render (the `undefined` -> initial-value transition isn't a "change" worth resetting for,
+  // and would otherwise fire a pointless setState on mount every time).
+  const resetKeyRef = useRef(resetKey);
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (mountedRef.current && resetKeyRef.current !== resetKey) setZoom(REST);
+    resetKeyRef.current = resetKey;
+    mountedRef.current = true;
+  }, [resetKey]);
 
   const atRest = zoom.scale === 1 && zoom.x === 0 && zoom.y === 0;
 

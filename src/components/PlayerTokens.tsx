@@ -40,7 +40,6 @@ export function PlayerTokens({
           <Tooltip
             key={pl.id}
             text={!stacked ? t("playerTokens.tooltip", { name: pl.name, sign: signLabel(t, pl.sign) }) + (pl.isStasis ? t("playerTokens.stasisSuffix") : "") : undefined}
-            openWhen={!stacked && active}
             className="absolute w-3 h-3 md:w-5 md:h-5"
             style={{ left: stacked ? i * offset : undefined, bottom: 0, zIndex: ordered.length - 1 - i }}
           >

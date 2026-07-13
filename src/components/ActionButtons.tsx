@@ -109,7 +109,7 @@ export function ActionButtons({
           onClick={onEndTurn}
         />
       </div>
-      <div className={`text-[${BODY_FONT_SIZE}] leading-snug mt-2.5`} style={{ color: "#6d5f94", fontWeight: "bolder" }}>
+      <div className={`text-[11px] md:text-[${BODY_FONT_SIZE}] leading-snug mt-2.5`} style={{ color: "#6d5f94", fontWeight: "bolder" }}>
         {mode === "move" && t("controlPanel.modeMove")}
         {mode === "place" && t("controlPanel.modePlace") + (showRotate ? t("controlPanel.modePlaceRebelWave") : "")}
         {mode === "discard" && t("controlPanel.modeDiscard")}
