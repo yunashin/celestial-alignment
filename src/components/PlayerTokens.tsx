@@ -32,7 +32,7 @@ export function PlayerTokens({
   const height = 20;
 
   return (
-    <div className="group absolute bottom-1 left-1 z-10" style={{ width, height }}>
+    <div className="group absolute bottom-1 left-1 z-10 pointer-events-auto" style={{ width, height }}>
       {ordered.map((pl, i) => {
         const c = ELEMENT_META[pl.element].color;
         const active = pl.id === activeId;
@@ -40,6 +40,7 @@ export function PlayerTokens({
           <Tooltip
             key={pl.id}
             text={!stacked ? t("playerTokens.tooltip", { name: pl.name, sign: signLabel(t, pl.sign) }) + (pl.isStasis ? t("playerTokens.stasisSuffix") : "") : undefined}
+            openWhen={!stacked && active}
             className="absolute w-3 h-3 md:w-5 md:h-5"
             style={{ left: stacked ? i * offset : undefined, bottom: 0, zIndex: ordered.length - 1 - i }}
           >

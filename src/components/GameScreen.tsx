@@ -95,18 +95,43 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   }, [state.active, state.phase]);
 
   // Scrolls the new active player's own board tile into view whenever a turn starts, if it's
-  // currently scrolled out of view — the top pane's own vertical scroll (used to reach the
-  // board's bottom edge when the board is taller than the available height, see the top pane's
-  // own doc comment further down) doesn't otherwise track whose turn it is, so a player who
-  // scrolled down to see a distant part of the board on someone else's turn could otherwise start
-  // their own turn looking at a completely different part of the map. `block`/`inline: "nearest"`
-  // make this a true no-op if the tile's already visible, rather than force-centering it every
-  // turn. Mobile only — desktop's top pane never scrolls (`md:overflow-visible`), so this would be
-  // an inert no-op there anyway.
+  // currently scrolled out of view (or hidden behind the sticky StatusMessage/DeckTray/Eclipse-
+  // Tracker header) — the top pane's own vertical scroll (used to reach the board's bottom edge
+  // when the board is taller than the available height, see the top pane's own doc comment
+  // further down) doesn't otherwise track whose turn it is, so a player who scrolled down to see
+  // a distant part of the board on someone else's turn could otherwise start their own turn
+  // looking at a completely different part of the map.
+  //
+  // Deliberately NOT `tileEl.scrollIntoView(...)` — the native API only knows whether the tile is
+  // within the scrollport's bounds, not that the sticky header visually covers the top slice of
+  // that same scrollport (`position: sticky` stays in normal flow for scroll-visibility purposes,
+  // it just overlays on top). `block: "nearest"` alone would happily leave the tile scrolled to
+  // just past the container's top edge, technically "visible" but physically underneath the
+  // header. This instead measures the sticky header's own live height and treats anything above
+  // its bottom edge as obstructed, only nudging scroll the minimum needed to clear it (or to pull
+  // a tile back up if it's below the container's own bottom edge) — a true no-op if the tile is
+  // already fully unobstructed, same as the old `scrollIntoView("nearest")` was for the case that
+  // didn't involve the header. Mobile only — desktop's top pane never scrolls
+  // (`md:overflow-visible`) and has no sticky header, so this is an inert no-op there anyway.
   useEffect(() => {
     if (!isMobile) return;
+    const container = topPaneRef.current;
     const tileEl = document.querySelector<HTMLElement>(`[data-tile="${active.position.x},${active.position.y}"]`);
-    tileEl?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    if (!container || !tileEl) return;
+    const containerRect = container.getBoundingClientRect();
+    const tileRect = tileEl.getBoundingClientRect();
+    const headerBottom = stickyHeaderRef.current?.getBoundingClientRect().bottom ?? containerRect.top;
+    let dy = 0;
+    if (tileRect.top < headerBottom) dy = tileRect.top - headerBottom;
+    else if (tileRect.bottom > containerRect.bottom) dy = tileRect.bottom - containerRect.bottom;
+    // Horizontal: same "nudge only if actually out of bounds" nearest-style math, kept separate
+    // from vertical since there's no sticky obstruction on this axis — the container is
+    // `overflow-x-hidden` and the board is sized to fit its available width (see GridBoard's
+    // `widthPriority`), so this should normally be a no-op, but stays correct if that ever changes.
+    let dx = 0;
+    if (tileRect.left < containerRect.left) dx = tileRect.left - containerRect.left;
+    else if (tileRect.right > containerRect.right) dx = tileRect.right - containerRect.right;
+    if (dx !== 0 || dy !== 0) container.scrollBy({ top: dy, left: dx, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.active, isMobile]);
 
@@ -116,6 +141,8 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const handMobileRef = useRef<HTMLDivElement>(null);
   const handDesktopRef = useRef<HTMLDivElement>(null);
   const boardWrapRef = useRef<HTMLDivElement>(null);
+  const topPaneRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
   const eventBaselineRef = useRef<EventBaseline | null>(null);
 
   useEffect(() => {
@@ -612,7 +639,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           ~1/3 of the screen instead of letting this section grow into that space. `gap-1.5` (not
           `gap-3`) below `md:` — every bit of vertical chrome above the board is space the board
           doesn't get. */}
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
+      <div ref={topPaneRef} className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
@@ -667,6 +694,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             md:bg-transparent md:backdrop-blur-none md:rounded-none md:p-0` resets are just
             belt-and-suspenders so the desktop row renders with zero card chrome. */}
         <div
+          ref={stickyHeaderRef}
           className="flex flex-col gap-1.5 shrink-0 sticky top-0 z-20 md:static md:z-auto rounded-lg md:rounded-none border border-[#2a2340] md:border-0 px-1.5 py-1.5 md:p-0 bg-black/35 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none"
         >
           {/* `flex-col md:flex-row` outer + `md:contents` on the DeckTray/Tracker wrapper is what
