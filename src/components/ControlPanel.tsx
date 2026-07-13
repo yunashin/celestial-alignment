@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BODY_FONT_SIZE, ELEMENT_META, SIGNS } from "../constants";
+import { useIsMobileViewport } from "../hooks/useIsMobileViewport";
 import { useTranslation } from "../i18n";
 import { elementLabel, signAbility, signDesc, signLabel, surgeText, type TFunc } from "../i18n/gameText";
 import type { GameState, Player, PowerUp, UiMode } from "../types";
@@ -118,6 +119,20 @@ export function ControlPanel({
     return () => cancelAnimationFrame(id);
   }, [isScorpioHealTargeting]);
 
+  const isMobile = useIsMobileViewport();
+  const statusCardRef = useRef<HTMLDivElement>(null);
+  // On mobile, ControlPanel itself doesn't scroll independently (`md:overflow-y-auto` is desktop-
+  // only) — the actual scrolling ancestor is GameScreen's whole bottom-pane wrapper, which also
+  // holds the mobile ActionButtons/hand-panel copies above this component. A player who's scrolled
+  // down to read the roster, or up to reach their hand, has no reason to also notice a new turn
+  // started underneath — this brings the (always-current) active player's own status card back
+  // into view whenever `state.active` changes. `block: "nearest"` is what makes this a true no-op
+  // when the card's already visible, rather than force-centering it on every single turn.
+  useEffect(() => {
+    if (!isMobile) return;
+    statusCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [state.active, isMobile]);
+
   return (
     <div
       className="rounded-xl border p-3 md:p-4 flex flex-col gap-3 w-full h-full md:overflow-y-auto md:max-h-dvh"
@@ -137,7 +152,7 @@ export function ControlPanel({
             <EclipseTracker value={state.tracker} />
           </div>
 
-          <div className="rounded-lg border p-3" style={{ borderColor: `${elc}66`, background: ELEMENT_META[p.element].soft }}>
+          <div ref={statusCardRef} className="rounded-lg border p-3" style={{ borderColor: `${elc}66`, background: ELEMENT_META[p.element].soft }}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2.5 min-w-0">
