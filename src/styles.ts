@@ -1,21 +1,23 @@
 export const GLOBAL_CSS = `
 /* Belt-and-suspenders against accidental horizontal scroll on mobile (a vertical swipe
    occasionally "catching" sideways drift) — App.tsx's own root div also gets overflow-x-hidden/
-   touch-pan-y/overscroll-none directly, but html/body need this too since they're a SEPARATE
+   touch-pan-y/overscroll-x-none directly, but html/body need this too since they're a SEPARATE
    scrollable box any stray overflow-causing element (now or added later) could scroll within,
    outside App's own container.
-   overscroll-behavior-y: none stops iOS Safari's elastic rubber-band bounce past the top/bottom
-   of the page (the setup screen scrolls via App.tsx's own root div's overflow-y-auto, which sits
-   INSIDE html/body — but html/body themselves are still the outermost scrollable box on iOS, so
-   they need the same containment or the browser still bounces at that outer level). background
-   matches STARFIELD's own solid base color (#0b0914, see below) so the sliver of page exposed
-   during that bounce — which sits BEHIND every element on the page, including position: fixed
-   ones, since it's the browser's own viewport background, not any CSS box — reads as more of the
-   same starfield instead of a jarring flash of the browser's default white. */
+   background matches STARFIELD's own solid base color (#0b0914, see below) so the sliver of page
+   exposed during iOS Safari's elastic rubber-band bounce past the top/bottom — which sits BEHIND
+   every element on the page, including position: fixed ones, since it's the browser's own
+   viewport background, not any CSS box — reads as more of the same starfield instead of a jarring
+   flash of the browser's default white.
+   Deliberately does NOT also set overscroll-behavior-y: none here — that was tried and reverted:
+   setting it to "none" on html/body (the actual ROOT scroller, not an intermediate one) suppressed
+   ALL wheel-driven scrolling of the page in Chromium, not just the bounce past the boundary — a
+   real regression, not a hypothetical, confirmed by disabling it live and watching scroll work
+   again. The background fix alone still solves the original white-flash report; only the
+   containment half of that fix turned out to be unsafe on the root scroller specifically. */
 html, body {
   overflow-x: hidden;
   overscroll-behavior-x: none;
-  overscroll-behavior-y: none;
   max-width: 100%;
   background: #0b0914;
 }
