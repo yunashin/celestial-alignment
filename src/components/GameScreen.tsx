@@ -743,7 +743,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
                 centers GridBoard's own (smaller, explicitly pixel-sized) box within this now-
                 full-size wrapper — `containerRef`'s own centering would otherwise be inert, since
                 `contentRef` fills 100% of it either way. */}
-            <div ref={boardZoom.contentRef} className="w-full h-full flex items-center justify-center" style={boardZoom.contentStyle}>
+            <div ref={boardZoom.contentRef} className="w-full h-full flex items-center justify-center pb-4" style={boardZoom.contentStyle}>
               <GridBoard
                 state={state}
                 highlights={highlights}
