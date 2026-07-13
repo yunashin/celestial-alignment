@@ -113,6 +113,16 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // already fully unobstructed, same as the old `scrollIntoView("nearest")` was for the case that
   // didn't involve the header. Mobile only — desktop's top pane never scrolls
   // (`md:overflow-visible`) and has no sticky header, so this is an inert no-op there anyway.
+  //
+  // Vertical only, deliberately — never scrolls the container horizontally. The container is
+  // `overflow-x-hidden`, so a horizontal `scrollBy` doesn't get undone by anything visible; it
+  // just silently shifts the clipped viewport sideways with no way back (the same class of bug
+  // already fixed once for the html/body white-gap issue — see styles.ts's own notes). Worse,
+  // once the board is pinch-zoomed/panned (see usePinchZoomPan), `tileEl.getBoundingClientRect()`
+  // reflects that CSS transform, so a zoomed-in tile can easily read as horizontally out-of-bounds
+  // relative to the container even though nothing about the container's own scroll position is
+  // actually wrong — "fixing" that by scrolling the container sideways would fight the zoom/pan
+  // state instead of the (separate, transform-based) mechanism that actually controls it.
   useEffect(() => {
     if (!isMobile) return;
     const container = topPaneRef.current;
@@ -124,14 +134,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
     let dy = 0;
     if (tileRect.top < headerBottom) dy = tileRect.top - headerBottom;
     else if (tileRect.bottom > containerRect.bottom) dy = tileRect.bottom - containerRect.bottom;
-    // Horizontal: same "nudge only if actually out of bounds" nearest-style math, kept separate
-    // from vertical since there's no sticky obstruction on this axis — the container is
-    // `overflow-x-hidden` and the board is sized to fit its available width (see GridBoard's
-    // `widthPriority`), so this should normally be a no-op, but stays correct if that ever changes.
-    let dx = 0;
-    if (tileRect.left < containerRect.left) dx = tileRect.left - containerRect.left;
-    else if (tileRect.right > containerRect.right) dx = tileRect.right - containerRect.right;
-    if (dx !== 0 || dy !== 0) container.scrollBy({ top: dy, left: dx, behavior: "smooth" });
+    if (dy !== 0) container.scrollBy({ top: dy, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.active, isMobile]);
 
