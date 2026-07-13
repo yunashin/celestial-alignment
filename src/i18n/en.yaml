@@ -277,7 +277,6 @@ deckTray:
   discardTooltip: "Discard ({count}) — spent, destroyed, and swapped-out Star Cards"
 
 playerTokens:
-  tooltip: "{name} ({sign})"
   stasisSuffix: " — In Stasis: will reboot at 1 HP if an ally ends turn adjacent"
 
 cardHand:
