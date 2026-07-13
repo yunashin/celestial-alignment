@@ -186,7 +186,11 @@ export function TileView({
         )}
 
         {tile.isCenter && (
-          <Tooltip className="relative w-full h-full flex items-center justify-center" title={t("tileView.orreryTitle")} text={t("tileView.orreryText")}>
+          <Tooltip
+            className={`relative w-full h-full flex items-center justify-center${playersHere.length > 0 ? " group-hover/tile:z-20" : ""}`}
+            title={t("tileView.orreryTitle")}
+            text={t("tileView.orreryText")}
+          >
             <div
               className="w-4/5 h-4/5 rounded-full border-2 border-dashed flex items-center justify-center"
               style={{
@@ -425,10 +429,25 @@ export function TileView({
           unrotated, with zero per-badge changes needed. None of these are tied to a specific
           neighbor direction (unlike the card connectors above, deliberately left un-rotated) —
           they're arbitrary declutter corners, so undoing the board's rotation for the whole group
-          is exactly what "stay readable" means for them. */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
+          is exactly what "stay readable" means for them.
+
+          `pointer-events-none` on this wrapper (with `pointer-events-auto` restored on every child
+          below) is load-bearing, not decorative: this div is `absolute inset-0`, so even on a tile
+          with none of the badges below present (e.g. a plain empty tile, or the center Orrery tile
+          with nobody standing on it) it still fully occupies the tile's hit-testing box as an empty,
+          invisible layer painted ON TOP of the earlier "clipped effects" wrapper (the one holding
+          the Orrery's own spinning-symbol Tooltip and the corrupted-tile countdown Tooltip, both
+          centered — i.e. sitting exactly where THIS wrapper's own empty space also is). Without
+          `pointer-events-none` here, `document.elementFromPoint()` at the Orrery's center resolves
+          to THIS wrapper's bare `<div>`, not the Tooltip's trigger span underneath it — the Orrery
+          tooltip's own hover handlers never fire at all, on any tile, regardless of whether a
+          Guardian is standing there. Every badge below gets `pointer-events-auto` back explicitly
+          (an inherited `pointer-events: none` would otherwise cascade onto them too) so they stay
+          exactly as interactive as before; only the wrapper's own empty background pixels now let
+          hover pass through to whatever's centered underneath. */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
         {tile.isAsteroid && (
-          <Tooltip title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
+          <Tooltip className="relative inline-flex pointer-events-auto" title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
             <span className="text-xs md:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>
               🪨
             </span>
@@ -436,7 +455,7 @@ export function TileView({
         )}
 
         {tile.isVoid && (
-          <Tooltip title={t("tileView.voidTitle")} text={t("tileView.voidText")}>
+          <Tooltip className="relative inline-flex pointer-events-auto" title={t("tileView.voidTitle")} text={t("tileView.voidText")}>
             <span className="text-xs md:text-lg" style={{ animation: "caSpin 5s linear infinite", filter: "drop-shadow(0 0 8px #a855f7)" }}>
               🕳️
             </span>
@@ -444,7 +463,11 @@ export function TileView({
         )}
 
         {tile.isShootingStar && (
-          <Tooltip title={t("tileView.shootingStarTitle")} text={tile.powerUp ? powerUpText(t, tile.powerUp) : undefined}>
+          <Tooltip
+            className="relative inline-flex pointer-events-auto"
+            title={t("tileView.shootingStarTitle")}
+            text={tile.powerUp ? powerUpText(t, tile.powerUp) : undefined}
+          >
             <span className="text-xs md:text-lg" style={{ animation: "caPulse 1.3s ease-in-out infinite", filter: "drop-shadow(0 0 8px #ffd166)" }}>
               💫
             </span>
@@ -452,28 +475,28 @@ export function TileView({
         )}
 
         {tile.isShootingStar && tile.powerUp === "TRACKER_DOWN" && (
-          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+          <Tooltip className="absolute right-px top-px z-10 inline-flex pointer-events-auto" text={powerUpText(t, tile.powerUp)}>
             <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ☽
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "BONUS_AP" && (
-          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+          <Tooltip className="absolute right-px top-px z-10 inline-flex pointer-events-auto" text={powerUpText(t, tile.powerUp)}>
             <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ◇
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "BONUS_HAND" && (
-          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+          <Tooltip className="absolute right-px top-px z-10 inline-flex pointer-events-auto" text={powerUpText(t, tile.powerUp)}>
             <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ☆
             </span>
           </Tooltip>
         )}
         {tile.isShootingStar && tile.powerUp === "HEAL_UNLOCK" && (
-          <Tooltip className="absolute right-px top-px z-10 inline-flex" text={powerUpText(t, tile.powerUp)}>
+          <Tooltip className="absolute right-px top-px z-10 inline-flex pointer-events-auto" text={powerUpText(t, tile.powerUp)}>
             <span className="leading-none text-[8px] md:text-xs" style={{ color: "#ffd166", filter: "drop-shadow(0 0 4px #ffd166)" }}>
               ♡
             </span>
@@ -481,13 +504,13 @@ export function TileView({
         )}
 
         {apCostBadge && (
-          <Tooltip className="absolute left-1/2 -translate-x-1/2 z-10 inline-flex" text={apCostBadge.tooltip}>
+          <Tooltip className="absolute left-1/2 -translate-x-1/2 z-10 inline-flex pointer-events-auto" text={apCostBadge.tooltip}>
             <ApBadge color="#00ffff" cost={apCostBadge.cost} isForTileView={true} />
           </Tooltip>
         )}
 
         {tile.isLocked && (
-          <Tooltip className="absolute right-px top-px z-10 inline-flex" title={t("tileView.lockedTitle")} text={t("tileView.lockedText")}>
+          <Tooltip className="absolute right-px top-px z-10 inline-flex pointer-events-auto" title={t("tileView.lockedTitle")} text={t("tileView.lockedText")}>
             <span className="leading-none text-[7px] md:text-[10px]" style={{ color: "#3dd68c", textShadow: "0 0 5px #3dd68c" }}>
               ◈
             </span>
@@ -495,7 +518,7 @@ export function TileView({
         )}
 
         {tile.isShielded && (
-          <Tooltip className="absolute left-px top-px z-10 inline-flex" title={t("tileView.shieldedTitle")} text={t("tileView.shieldedText")}>
+          <Tooltip className="absolute left-px top-px z-10 inline-flex pointer-events-auto" title={t("tileView.shieldedTitle")} text={t("tileView.shieldedText")}>
             <span className="leading-none text-[8px] md:text-xs" style={{ filter: "drop-shadow(0 0 4px #7dd3fc)" }}>
               🛡️
             </span>
@@ -504,7 +527,7 @@ export function TileView({
 
         {lunarShielded && (
           <Tooltip
-            className="absolute bottom-0 right-0 z-10 inline-flex"
+            className="absolute bottom-0 right-0 z-10 inline-flex pointer-events-auto"
             side="right"
             title={t("tileView.lunarShieldTitle")}
             text={t("tileView.lunarShieldText")}
@@ -517,7 +540,7 @@ export function TileView({
 
         {tile.isEnclosed && (
           <Tooltip
-            className="absolute bottom-0 left-0 z-10 inline-flex"
+            className="absolute bottom-0 left-0 z-10 inline-flex pointer-events-auto"
             side="right"
             title={t("tileView.enclosedTitle")}
             text={t("tileView.enclosedText")}
