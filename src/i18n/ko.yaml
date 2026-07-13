@@ -317,6 +317,8 @@ gameScreen:
   boardCursorSelect: "강조 표시된 타일 선택"
   dpadHide: "보드 탐색 컨트롤 숨기기"
   dpadShow: "보드 탐색 컨트롤 표시"
+  bottomPaneHide: "패와 컨트롤 숨기기"
+  bottomPaneShow: "패와 컨트롤 표시"
 
 rules:
   noCorruptedVisited: "직접 방문(이동)한 타일 중에서는 현재 정화할 수 있는 오염된 타일이 없습니다."

@@ -320,6 +320,8 @@ gameScreen:
   boardCursorSelect: "Select the highlighted tile"
   dpadHide: "Hide board navigation controls"
   dpadShow: "Show board navigation controls"
+  bottomPaneHide: "Hide hand and controls"
+  bottomPaneShow: "Show hand and controls"
 
 rules:
   noCorruptedVisited: "No corrupted tile you've personally visited (via Move) is available to purify."

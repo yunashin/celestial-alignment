@@ -3,7 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- maximum-scale=1, user-scalable=no disables the browser's own whole-page pinch-zoom — see
+       src/hooks/usePinchZoomPan.ts's doc comment for why: native pinch-zoom has no way to be
+       scoped to just the board, so it has to be turned off site-wide in favor of a custom gesture
+       that only zooms the board region, leaving everything else (including the bottom pane) fixed. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>" />
   <title>Celestial Alignment</title>
