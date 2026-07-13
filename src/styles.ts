@@ -5,21 +5,31 @@ export const GLOBAL_CSS = `
    scrollable box any stray overflow-causing element (now or added later) could scroll within,
    outside App's own container.
    background matches STARFIELD's own solid base color (#0b0914, see below) so the sliver of page
-   exposed during iOS Safari's elastic rubber-band bounce past the top/bottom — which sits BEHIND
-   every element on the page, including position: fixed ones, since it's the browser's own
+   exposed during a mobile browser's elastic rubber-band bounce past the top/bottom — which sits
+   BEHIND every element on the page, including position: fixed ones, since it's the browser's own
    viewport background, not any CSS box — reads as more of the same starfield instead of a jarring
    flash of the browser's default white.
-   Deliberately does NOT also set overscroll-behavior-y: none here — that was tried and reverted:
+   overscroll-behavior-y: none is NOT set unconditionally here — that was tried and reverted:
    setting it to "none" on html/body (the actual ROOT scroller, not an intermediate one) suppressed
    ALL wheel-driven scrolling of the page in Chromium, not just the bounce past the boundary — a
    real regression, not a hypothetical, confirmed by disabling it live and watching scroll work
-   again. The background fix alone still solves the original white-flash report; only the
-   containment half of that fix turned out to be unsafe on the root scroller specifically. */
+   again. Scoped below to @media (pointer: coarse) instead — devices whose PRIMARY pointer is a
+   finger/stylus rather than a mouse/trackpad, i.e. real phones/tablets, not a desktop browser
+   resized to a phone-sized viewport (DevTools' device emulation still reports pointer: fine there,
+   which is exactly why the original bug reproduced on desktop but not in an emulated iPhone SE
+   viewport) — matching overscroll-behavior's own actual design purpose (suppressing pull-to-
+   refresh/scroll-chaining on touch swipes) instead of applying it somewhere its Chromium
+   implementation turns out to have this side effect for wheel input. */
 html, body {
   overflow-x: hidden;
   overscroll-behavior-x: none;
   max-width: 100%;
   background: #0b0914;
+}
+@media (pointer: coarse) {
+  html, body {
+    overscroll-behavior-y: none;
+  }
 }
 @keyframes caPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes caSpin { to { transform: rotate(360deg); } }
