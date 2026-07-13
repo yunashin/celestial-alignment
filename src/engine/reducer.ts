@@ -396,6 +396,30 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         (vanguard ? tr("log.placeVanguard") : "") +
         "."
       );
+      // Checked and reported immediately after the placement log, ahead of the chain/Surge blocks
+      // below, so a path completion (the headline outcome of a placement) is the FIRST message
+      // StatusMessage queues for this dispatch rather than the last — a completed path's own final
+      // card is very often also part of a 3+ chain and/or an Element Surge, and StatusMessage shows
+      // queued messages serially at ~4.5s each, so queuing pathComplete last meant it could take 9+
+      // seconds to ever appear, easy to miss on a small mobile screen and easy to mistake for the
+      // message never firing at all.
+      for (const el of ELEMENTS) {
+        if (!completedBefore.includes(el) && isPathComplete(s.tiles, el, s.center, s.nodes)) {
+          // 4-player games need 4 separate completed paths to win, which is meaningfully harder
+          // than 2-3 player games racing the same Eclipse Tracker — completing any one path there
+          // eases the tracker as a direct balance offset (see ECLIPSE_EFFECT_SCALE_4P's comment).
+          let msg = tr("log.pathComplete", { label: elementLabel(tr, el) });
+          const trackerBefore = s.tracker;
+          if (s.players.length === 4) {
+            s.tracker = Math.max(0, s.tracker - PATH_COMPLETE_TRACKER_REDUCTION_4P);
+            if (PATH_COMPLETE_TRACKER_REDUCTION_4P) {
+              msg += tr("log.pathCompleteTrackerEase", { pct: PATH_COMPLETE_TRACKER_REDUCTION_4P });
+            }
+          }
+          log(s, msg + trackerDelta(trackerBefore, s.tracker));
+          important(s, msg);
+        }
+      }
       const chainAfterGroup = computeSameElementChainGroup(s.tiles, card.element, action.x, action.y);
       const chainAfter = chainAfterGroup.size;
       // The animation/log/Message Log trigger — and the Tracker discount itself — fire on EVERY
@@ -494,23 +518,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             important(s, msg);
             break;
           }
-        }
-      }
-      for (const el of ELEMENTS) {
-        if (!completedBefore.includes(el) && isPathComplete(s.tiles, el, s.center, s.nodes)) {
-          // 4-player games need 4 separate completed paths to win, which is meaningfully harder
-          // than 2-3 player games racing the same Eclipse Tracker — completing any one path there
-          // eases the tracker as a direct balance offset (see ECLIPSE_EFFECT_SCALE_4P's comment).
-          let msg = tr("log.pathComplete", { label: elementLabel(tr, el) });
-          const trackerBefore = s.tracker;
-          if (s.players.length === 4) {
-            s.tracker = Math.max(0, s.tracker - PATH_COMPLETE_TRACKER_REDUCTION_4P);
-            if (PATH_COMPLETE_TRACKER_REDUCTION_4P) {
-              msg += tr("log.pathCompleteTrackerEase", { pct: PATH_COMPLETE_TRACKER_REDUCTION_4P });
-            }
-          }
-          log(s, msg + trackerDelta(trackerBefore, s.tracker));
-          important(s, msg);
         }
       }
       // A placement can newly close a loop in the connector graph (a rectangle being the simplest

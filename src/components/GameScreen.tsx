@@ -106,7 +106,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   useEffect(() => {
     if (!isMobile) return;
     const tileEl = document.querySelector<HTMLElement>(`[data-tile="${active.position.x},${active.position.y}"]`);
-    tileEl?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    tileEl?.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.active, isMobile]);
 
@@ -824,7 +824,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           own `flex-1`, exactly like the D-pad's own collapse further down. */}
       <div
         className="shrink-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:contents md:h-auto"
-        style={isMobile ? { height: bottomPaneVisible ? "30dvh" : 0, transition: "height 300ms ease-in-out" } : undefined}
+        style={isMobile ? { height: bottomPaneVisible ? "34dvh" : 0, transition: "height 300ms ease-in-out" } : undefined}
       >
         {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn) — see ActionButtons'
             own doc comment for why this is a second live copy rather than the desktop one
@@ -848,6 +848,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           />
         </div>
 
+        {/* Mobile-only card hand */}
         <div
           ref={handMobileRef}
           className="rounded-xl border p-2 shrink-0 md:hidden"

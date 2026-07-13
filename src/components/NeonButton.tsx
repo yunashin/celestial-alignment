@@ -35,7 +35,7 @@ export function NeonButton({
       <button
         onClick={onClick}
         disabled={disabled}
-        className="px-2.5 py-1.5 rounded border text-[11.5px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5"
+        className="px-2.5 py-1.5 rounded border text-[9px] md:text-[11.5px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5"
         style={style}
       >
         {apCost !== undefined && <ApBadge cost={apCost} color={disabled ? "#4c3f73" : active ? "#0b0914" : color} />}
