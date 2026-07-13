@@ -37,10 +37,8 @@ export function PlayerTokens({
         const c = ELEMENT_META[pl.element].color;
         const active = pl.id === activeId;
         return (
-          <Tooltip
+          <span
             key={pl.id}
-            text={!stacked ? t("playerTokens.tooltip", { name: pl.name, sign: signLabel(t, pl.sign) }) + (pl.isStasis ? t("playerTokens.stasisSuffix") : "") : undefined}
-            openWhen={!stacked && active}
             className="absolute w-3 h-3 md:w-5 md:h-5"
             style={{ left: stacked ? i * offset : undefined, bottom: 0, zIndex: ordered.length - 1 - i }}
           >
@@ -57,7 +55,7 @@ export function PlayerTokens({
             >
               <span className={`text-[${BODY_FONT_SIZE}] md:text-sm leading-none`} style={{ paddingTop: "2px" }}>{SIGNS[pl.sign].glyph}</span>
             </div>
-          </Tooltip>
+          </span>
         );
       })}
 

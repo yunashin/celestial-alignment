@@ -444,8 +444,22 @@ export function TileView({
           Guardian is standing there. Every badge below gets `pointer-events-auto` back explicitly
           (an inherited `pointer-events: none` would otherwise cascade onto them too) so they stay
           exactly as interactive as before; only the wrapper's own empty background pixels now let
-          hover pass through to whatever's centered underneath. */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: rotated ? "rotate(-90deg)" : undefined }}>
+          hover pass through to whatever's centered underneath.
+
+          `containerType: "inline-size"` makes this wrapper a CSS container query context for its
+          descendants — its own inline-size is exactly the tile's own width (it's `inset-0` inside
+          the `w-full h-full` tile root), so a `cqw` unit anywhere inside resolves to "% of this
+          tile's actual rendered pixel width." `ApBadge`'s `isForTileView` sizing uses this (see its
+          own doc comment) instead of a fixed px size or a `md:` breakpoint jump — tile size is
+          driven by `useFitSize`'s continuous ResizeObserver measurement, not by the `md:` viewport
+          breakpoint, so a two-step breakpoint size visibly mismatches the tile at plenty of real
+          window sizes in between (confirmed by direct measurement: the same board rendered tiles
+          anywhere from ~16px to ~43px across different desktop window heights alone, with no
+          correlation to the `md:` breakpoint at all). */}
+      <div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{ transform: rotated ? "rotate(-90deg)" : undefined, containerType: "inline-size" }}
+      >
         {tile.isAsteroid && (
           <Tooltip className="relative inline-flex pointer-events-auto" title={t("tileView.asteroidTitle")} text={t("tileView.asteroidText")}>
             <span className="text-xs md:text-lg" style={{ filter: "grayscale(0.7) drop-shadow(0 0 3px #94a3b8)" }}>

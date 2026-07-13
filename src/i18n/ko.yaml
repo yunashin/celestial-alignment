@@ -274,7 +274,6 @@ deckTray:
   discardTooltip: "무덤 ({count}) — 소모, 파괴, 또는 교체된 스타 카드들"
 
 playerTokens:
-  tooltip: "{name} ({sign})"
   stasisSuffix: " — 정지 상태: 아군이 인접 타일에서 턴을 종료하면 1 HP로 재기동합니다"
 
 cardHand:
