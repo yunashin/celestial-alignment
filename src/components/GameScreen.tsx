@@ -18,6 +18,7 @@ import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
 import { useIsMobileViewport } from "../hooks/useIsMobileViewport";
 import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
+import { usePinchZoomPan } from "../hooks/usePinchZoomPan";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SeedDisplay } from "./SeedDisplay";
 import { StatusMessage } from "./StatusMessage";
@@ -61,6 +62,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // touch without tapping tiles directly), but collapsible so a player who prefers tapping the
   // board itself can slide it away to free that space for the scrollable top pane above.
   const [dpadVisible, setDpadVisible] = useState(false);
+  // Mobile-only BOTTOM PANE drawer (hand panel, action buttons, ControlPanel) — defaults open since
+  // it holds the actual controls needed to play, unlike the D-pad above. Collapsing it hands its
+  // reclaimed height straight to the top pane's own `flex-1` (same mechanism as the D-pad's own
+  // collapse), letting the board grow when a player wants to see more of it and isn't mid-action.
+  const [bottomPaneVisible, setBottomPaneVisible] = useState(true);
   const active = state.players[state.active];
   // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
   // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
@@ -71,6 +77,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // split, threaded into GridBoard so it can size the board by available WIDTH alone on mobile
   // (see useFitSize's `widthPriority` doc comment).
   const isMobile = useIsMobileViewport();
+  // Pinch-to-zoom + drag-to-pan, scoped to just the board (see the hook's own doc comment for why
+  // native page pinch-zoom had to be disabled site-wide, in index.html, in favor of this) — only
+  // active on mobile, since desktop has no touch gestures to hijack in the first place.
+  const boardZoom = usePinchZoomPan(isMobile);
 
   // A fresh turn starts the keyboard board-cursor over: the previous player's arrow-key position
   // isn't a meaningful default for whoever's turn it is now. Also clears once the game leaves
@@ -691,22 +701,47 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             semi-transparent backgrounds. Not needed on desktop, where the wrapper already had
             plenty of surrounding slack from its `md:min-h-[420px]` floor. */}
         <div ref={boardWrapRef} className="md:flex-1 md:min-h-[420px] my-7 md:my-0 flex items-center justify-center">
-          <GridBoard
-            state={state}
-            highlights={highlights}
-            previewTiles={previewTiles}
-            litKeys={litKeys}
-            glow={glow}
-            lunarShieldTiles={lunarShieldTiles}
-            chainGlowTiles={chainGlowTiles ?? undefined}
-            surgeTile={surgeTile}
-            cardPreview={cardPreview}
-            apCostTiles={apCostTiles}
-            cursorTile={boardCursor}
-            rotated={boardRotated}
-            widthPriority={isMobile}
-            onTileClick={onTileClick}
-          />
+          {/* Pinch-zoom container/content split (see usePinchZoomPan's own doc comment) — only
+              the board itself sits inside `contentRef`, deliberately NOT the sticky
+              StatusMessage/DeckTray/Eclipse-Tracker header above (a transformed ancestor breaks
+              `position: sticky` on descendants) and NOT the bottom pane below (a separate sibling
+              entirely, outside this wrapper's DOM subtree, so it's structurally impossible for the
+              zoom transform to reach it). `containerRef` clips zoomed content to this box and is
+              where the touch listeners live; `contentRef` is what actually gets scaled/panned. */}
+          {/* `w-full h-full` on BOTH of these is load-bearing, not decorative — GridBoard's own
+              `useFitSize` measures `ref.current.parentElement.clientWidth/clientHeight` (see that
+              hook's doc comment), which after this wrapping is `contentRef`'s div. A plain
+              unstyled `<div>` shrink-wraps to its own content's size by default (exactly the "looks
+              right, silently sizes to fit-content instead of available space" gotcha CLAUDE.md's
+              own known-CSS-gotcha section documents for this same board) — without an explicit
+              `w-full h-full` chain all the way from `boardWrapRef` (which DOES have a genuinely
+              definite size from its own ancestors) down through `containerRef` to `contentRef`,
+              GridBoard would measure a collapsed 0×0 (or min-content) box instead of the real
+              available space, rendering the whole board tiny. */}
+          <div ref={boardZoom.containerRef} className="relative w-full h-full" style={boardZoom.containerStyle}>
+            {/* `flex items-center justify-center` here (not on `containerRef`) is what actually
+                centers GridBoard's own (smaller, explicitly pixel-sized) box within this now-
+                full-size wrapper — `containerRef`'s own centering would otherwise be inert, since
+                `contentRef` fills 100% of it either way. */}
+            <div ref={boardZoom.contentRef} className="w-full h-full flex items-center justify-center" style={boardZoom.contentStyle}>
+              <GridBoard
+                state={state}
+                highlights={highlights}
+                previewTiles={previewTiles}
+                litKeys={litKeys}
+                glow={glow}
+                lunarShieldTiles={lunarShieldTiles}
+                chainGlowTiles={chainGlowTiles ?? undefined}
+                surgeTile={surgeTile}
+                cardPreview={cardPreview}
+                apCostTiles={apCostTiles}
+                cursorTile={boardCursor}
+                rotated={boardRotated}
+                widthPriority={isMobile}
+                onTileClick={onTileClick}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -726,7 +761,35 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         <CardHand player={active} mode={mode} selectedIndex={selectedCard} discardSel={discardSel} rotation={rotation} unaffordableIndices={unaffordableCardIndices} boardRotated={boardRotated} onSelect={onHandSelect} />
       </div>
 
-      <hr className="md:hidden" style={{ borderColor: "#3b2d5e", marginTop: '-12px' }} />
+      {/* Mobile-only handle that collapses/reveals the BOTTOM PANE below — a small circular chevron
+          centered directly ON the divider line rather than its own full handle row (unlike the
+          D-pad's own handle further down, which has no divider to piggyback on). The divider needs
+          to exist here regardless, so anchoring the toggle to it costs zero extra vertical space.
+          The button's own hit area (`p-2`) is bigger than the visible 24px circle for an easier
+          tap target without visually bulking up the indicator. The chevron points DOWN while the
+          pane is visible (tap sends it away/down) and flips to UP once collapsed (tap brings it
+          back up) — same convention as the D-pad's own handle chevron below. */}
+      <div className="relative md:hidden shrink-0" style={{ marginTop: '-12px' }}>
+        <hr style={{ borderColor: "#3b2d5e" }} />
+        <button
+          onClick={() => setBottomPaneVisible((v) => !v)}
+          aria-label={bottomPaneVisible ? t("gameScreen.bottomPaneHide") : t("gameScreen.bottomPaneShow")}
+          aria-expanded={bottomPaneVisible}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 p-2 flex items-center justify-center"
+        >
+          <span
+            className="w-8 h-8 rounded-full border flex items-center justify-center"
+            style={{ borderColor: "#3b2d5e", background: "#140f24", color: "#a99cd4" }}
+          >
+            <span
+              className="inline-block text-[20px] leading-none"
+              style={{ transition: "transform 300ms ease-in-out", transform: bottomPaneVisible ? "rotate(0deg)" : "rotate(180deg)" }}
+            >
+              ▾
+            </span>
+          </span>
+        </button>
+      </div>
 
       {/* BOTTOM PANE: everything below the board — hand panel, Eclipse Tracker, action buttons,
           ControlPanel (tabs/status card/roster) — pinned to roughly the bottom 1/3 of the screen on
@@ -734,8 +797,15 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           scrolling as a whole. `md:contents` makes this wrapper itself disappear from the box model
           at `md:` — its children (all individually `md:hidden` except the ControlPanel wrapper) then
           fall back into the root's row layout exactly where ControlPanel already sat before this
-          change, restoring the original 3-column desktop layout untouched. */}
-      <div className="shrink-0 h-[30dvh] md:h-auto flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:contents">
+          change, restoring the original 3-column desktop layout untouched. The `height`/`transition`
+          inline style (mobile only — gated on `isMobile` so it never fights the `md:h-auto`/
+          `md:contents` classes at desktop) is what makes the pane genuinely slide shut instead of
+          just popping — collapsing it to `0` hands the reclaimed space straight to the top pane's
+          own `flex-1`, exactly like the D-pad's own collapse further down. */}
+      <div
+        className="shrink-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:contents md:h-auto"
+        style={isMobile ? { height: bottomPaneVisible ? "30dvh" : 0, transition: "height 300ms ease-in-out" } : undefined}
+      >
         {/* Mobile-only copy of the action buttons (Move/Purify/.../End Turn) — see ActionButtons'
             own doc comment for why this is a second live copy rather than the desktop one
             repositioned via CSS alone (ControlPanel's own copy is `hidden md:block`, the mirror
