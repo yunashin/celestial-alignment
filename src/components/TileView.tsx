@@ -401,6 +401,20 @@ export function TileView({
           />
         )}
 
+        {/* Same additive-overlay pattern as lunarShielded/isEnclosed/isPurified above — independent
+            of the shared borderColor/shadow variables so it can't clobber (or be clobbered by)
+            highlighted/previewed/chainGlow's own border styling, and layers on top of whichever of
+            those is currently showing. A slow, pulsing purple border/glow makes a corrupted tile
+            readable at a glance without having to spot the small centered countdown badge — this
+            is deliberately ALWAYS on for a corrupted tile (not conditioned on hover/highlight),
+            since corruption is persistent game state, not a momentary interaction affordance. */}
+        {tile.isCorrupted && (
+          <div
+            className="absolute inset-0 rounded md:rounded-md pointer-events-none"
+            style={{ border: "1px solid #a855f766", animation: "caCorruptionPulse 2.2s ease-in-out infinite" }}
+          />
+        )}
+
         {activePlayerHere && (
           <div
             className="absolute inset-0 rounded md:rounded-md pointer-events-none"

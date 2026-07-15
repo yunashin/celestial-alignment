@@ -636,6 +636,25 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
     // board gets (see the board wrapper's own `widthPriority` comment), while the top pane can still
     // be scrolled on its own to reach the board's bottom edge if it's taller than its 2/3 share.
     <div className="w-full h-dvh flex flex-col md:flex-row gap-3 md:gap-4 p-2 md:p-3 overflow-hidden">
+      {/* Low-HP screen-edge flash — an FPS-style "you're about to die" damage indicator for the
+          currently active player. `fixed inset-0` (not tied to this root's own layout) so it
+          covers the whole viewport regardless of which pane/breakpoint is active, `pointer-events-
+          none` so it never blocks board/UI interaction, and `z-40` — below EndOverlay's `z-50` so a
+          loss screen still reads cleanly on top, though the `phase === "playing"` gate below makes
+          that ordering moot in practice since the two can't actually coexist. Gated on the active
+          player specifically (not "any player") since this is a first-person "your own health is
+          critical" indicator, mirroring how a pass-and-play turn only ever centers on one player's
+          perspective at a time — `!active.isStasis` guards against a state that shouldn't normally
+          coexist with `hp === 1` anyway (stasis triggers at 0 HP), kept for correctness/safety. */}
+      {state.phase === "playing" && active.hp === 1 && !active.isStasis && (
+        <div
+          className="fixed inset-0 z-40 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at center, transparent 45%, rgba(220,38,38,0.65) 100%)",
+            animation: "caLowHpPulse 1.1s ease-in-out infinite"
+          }}
+        />
+      )}
       {/* TOP PANE: header, status/deck tray, win banner, D-pad, board. `overflow-y-auto` (mobile
           only — desktop reverts to its original non-scrolling natural sizing) is what keeps the
           board's bottom edge reachable even though the bottom pane below permanently claims its own

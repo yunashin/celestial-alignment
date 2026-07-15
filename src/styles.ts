@@ -77,6 +77,13 @@ html, body {
   0%, 100% { box-shadow: 0 0 10px #fde047, 0 0 4px #fde047; }
   50% { box-shadow: 0 0 26px #fde047, 0 0 50px #fde047aa; }
 }
+/* Corrupted-tile border pulse — same box-shadow-pulse shape as caChainGlow above, but purple and
+   slower with a brief hold at its peak (45%-55%, rather than a single instantaneous 50% peak) so
+   it reads as an eerie "breathing"/flicker-hold rather than a smooth, mechanical chain-glow pulse. */
+@keyframes caCorruptionPulse {
+  0%, 100% { box-shadow: inset 0 0 6px #a855f799, 0 0 4px #7c3aed66; border-color: #a855f766; }
+  45%, 55% { box-shadow: inset 0 0 16px #c084fcdd, 0 0 14px #a855f7bb; border-color: #c084fccc; }
+}
 @keyframes caCursorPulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
@@ -112,6 +119,14 @@ html, body {
 @keyframes caCrumbleDust {
   0% { opacity: 0.9; transform: translate(0, 0) scale(1); }
   100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.15); }
+}
+/* Low-HP screen-edge flash — an FPS-style "you're about to die" damage indicator. Pulses fast
+   (1.1s, vs. the corrupted-tile pulse's slow 2.2s "eerie" feel above) to read as urgent rather than
+   ambient. Opacity-only (not box-shadow like the tile pulses) since this animates a full-viewport
+   radial-gradient overlay, not a bordered box. */
+@keyframes caLowHpPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
 }
 @keyframes caHeartRestore {
   0%, 100% { transform: scale(1); text-shadow: 0 0 6px #ff5f9e; }
