@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "./Tooltip";
 
@@ -71,6 +71,46 @@ export function Select<T extends string>({
     triggerRef.current?.focus();
   };
 
+  // Opening the listbox moves focus straight to the currently-selected option (falling back to
+  // the first one) rather than leaving focus on the trigger — this is what makes arrow-key
+  // navigation usable immediately after opening, matching a native <select>'s own behavior of
+  // starting keyboard navigation from whichever option is already chosen. Runs after the portal
+  // has actually mounted (useLayoutEffect, so there's no visible frame where focus is stuck on the
+  // trigger while the list is open).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const list = listRef.current;
+    if (!list) return;
+    const selected = list.querySelector<HTMLButtonElement>(`button[data-value="${value}"]`);
+    (selected ?? list.querySelector<HTMLButtonElement>("button"))?.focus();
+  }, [open, value]);
+
+  // ArrowDown/ArrowUp on the trigger while closed opens the list, matching a native <select>'s own
+  // behavior — the useLayoutEffect above then immediately focuses an option, so the very next
+  // ArrowDown/ArrowUp (once the list is open) is already handled by onListKeyDown below.
+  const onTriggerKeyDown = (e: ReactKeyboardEvent) => {
+    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !open) {
+      e.preventDefault();
+      toggle();
+    }
+  };
+
+  // Moves focus between the option <button>s directly (a roving-focus listbox, not a "highlighted
+  // but unfocused" native-select-style list) — these are real, individually-focusable buttons
+  // already, so this is the minimal way to make ArrowUp/ArrowDown do anything at all once the list
+  // is open; without it, only Tab (not arrow keys) could move between options. Clamps at the
+  // first/last option rather than wrapping around, matching the WAI-ARIA listbox pattern's default
+  // (non-wrapping) recommendation. `preventDefault` stops the arrow key from also scrolling the
+  // underlying page.
+  const onListKeyDown = (e: ReactKeyboardEvent<HTMLUListElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("button"));
+    const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const nextIndex = e.key === "ArrowDown" ? Math.min(currentIndex + 1, buttons.length - 1) : Math.max(currentIndex - 1, 0);
+    buttons[nextIndex]?.focus();
+  };
+
   // Mirrors Tooltip's own live-rect positioning: computed from the trigger's actual on-screen
   // position rather than CSS anchoring, so a clipping/scrolling ancestor can never cut the popup
   // off. Opens upward instead of downward when there isn't enough room below (e.g. the last
@@ -120,6 +160,7 @@ export function Select<T extends string>({
         type="button"
         ref={triggerRef}
         onClick={toggle}
+        onKeyDown={onTriggerKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
@@ -133,6 +174,7 @@ export function Select<T extends string>({
           <ul
             ref={listRef}
             role="listbox"
+            onKeyDown={onListKeyDown}
             className="fixed z-9 overflow-y-auto overflow-x-hidden rounded-lg border py-1"
             style={{
               left: pos.left,
@@ -151,6 +193,7 @@ export function Select<T extends string>({
                 <Tooltip className="w-full" title={o.tooltipTitle} text={o.tooltipText} side="left">
                   <button
                     type="button"
+                    data-value={o.value}
                     onClick={() => pick(o.value)}
                     className="w-full text-left px-3 py-2.5 text-base font-bold"
                     style={{ color: o.color ?? "#f1eeff", background: o.value === value ? "#3b2d5e" : "transparent" }}
