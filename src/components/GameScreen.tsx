@@ -111,8 +111,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // its bottom edge as obstructed, only nudging scroll the minimum needed to clear it (or to pull
   // a tile back up if it's below the container's own bottom edge) — a true no-op if the tile is
   // already fully unobstructed, same as the old `scrollIntoView("nearest")` was for the case that
-  // didn't involve the header. Mobile only — desktop's top pane never scrolls
-  // (`md:overflow-visible`) and has no sticky header, so this is an inert no-op there anyway.
+  // didn't involve the header. Mobile only — desktop has no sticky header (the same header markup
+  // renders `md:static` there) and, on the rare short desktop window where the top pane's now-
+  // universal `overflow-y-auto` (see that div's own doc comment) actually needs to scroll, there's
+  // no obstruction-behind-a-header case to correct for; extending this same auto-scroll to desktop
+  // too is a reasonable future enhancement but isn't what this effect was built for.
   //
   // Vertical only, deliberately — never scrolls the container horizontally. The container is
   // `overflow-x-hidden`, so a horizontal `scrollBy` doesn't get undone by anything visible; it
@@ -655,13 +658,19 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           }}
         />
       )}
-      {/* TOP PANE: header, status/deck tray, win banner, D-pad, board. `overflow-y-auto` (mobile
-          only — desktop reverts to its original non-scrolling natural sizing) is what keeps the
-          board's bottom edge reachable even though the bottom pane below permanently claims its own
-          ~1/3 of the screen instead of letting this section grow into that space. `gap-1.5` (not
-          `gap-3`) below `md:` — every bit of vertical chrome above the board is space the board
-          doesn't get. */}
-      <div ref={topPaneRef} className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto md:overflow-visible overflow-x-hidden">
+      {/* TOP PANE: header, status/deck tray, win banner, D-pad, board. `overflow-y-auto` is what
+          keeps the board's bottom edge reachable even though the bottom pane below permanently
+          claims its own ~1/3 of the screen instead of letting this section grow into that space —
+          on mobile that's the common case (the board routinely needs more height than the top
+          pane's own share), but it matters on desktop too now: a short desktop window can't fit
+          the header chrome + the board + its edge labels (e.g. "Earth" on the bottom edge) within
+          `md:min-h-[420px]`'s own floor, and unlike the right sidebar (`md:overflow-y-auto` on its
+          own wrapper further down) this pane used to be `md:overflow-visible` — not clipped, but
+          not scrollable either, so anything that didn't fit was simply cut off by the ROOT's own
+          `h-dvh overflow-hidden` with no way to reach it. Scrolling here on desktop too fixes that;
+          `gap-1.5` (not `gap-3`) below `md:` — every bit of vertical chrome above the board is
+          space the board doesn't get. */}
+      <div ref={topPaneRef} className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto overflow-x-hidden">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
@@ -711,8 +720,9 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             of the TOP PANE's own scroll container once the page scrolls past it, rather than
             scrolling away with the board underneath — a solid-ish background is needed there
             since, once stuck, the board scrolls beneath it and would otherwise show through. On
-            desktop, the TOP PANE never scrolls internally (`md:overflow-visible`), so
-            `sticky`/`z-20` are inert there regardless — the `md:static md:z-auto md:border-0
+            desktop this resets to `md:static`, so `sticky`/`z-20` are inert there regardless of
+            whether the TOP PANE itself happens to be scrolling (it now can, on a short window —
+            see that pane's own doc comment) — the `md:static md:z-auto md:border-0
             md:bg-transparent md:backdrop-blur-none md:rounded-none md:p-0` resets are just
             belt-and-suspenders so the desktop row renders with zero card chrome. */}
         <div
