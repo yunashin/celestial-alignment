@@ -1,3 +1,5 @@
+import { getSettings } from "./settings";
+
 /** Every distinct sound cue the game can play, synthesized on the fly via the Web Audio API rather
  * than shipped as audio files — keeps the app dependency-free and asset-free for sound. Each cue is
  * a short, hand-built envelope of oscillators/filtered noise (see the SOUND_RECIPES map at the
@@ -177,10 +179,12 @@ const SOUND_RECIPES: Record<SoundId, (c: AudioContext, dest: AudioNode) => void>
 /** Plays exactly one synthesized cue. Safe to call even before any user gesture / in a non-browser
  * environment (tests) — silently no-ops if an AudioContext can't be created. */
 export function playSound(id: SoundId) {
+  const volume = getSettings().sfxVolume;
+  if (volume <= 0) return;
   const c = getCtx();
   if (!c) return;
   const master = c.createGain();
-  master.gain.value = 1;
+  master.gain.value = volume;
   master.connect(c.destination);
   SOUND_RECIPES[id](c, master);
 }

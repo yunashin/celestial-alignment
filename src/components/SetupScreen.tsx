@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BODY_FONT_SIZE, DEFAULT_SIGNS, ELEMENT_META, RECOMMENDED_SEEDS, SIGNS } from "../constants";
+import { navigate } from "../hooks/useRoute";
 import { useTranslation } from "../i18n";
 import { elementDescription, elementLabel, signAbility, signDesc, signLabel, surgeText, type TFunc } from "../i18n/gameText";
 import type { PlayerSetup, Sign } from "../types";
@@ -17,12 +18,9 @@ import {
   type FavoriteSeed
 } from "../utils/setupStorage";
 import { article } from "../utils/grammar";
-import { HowToPlay } from "./HowToPlay";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Select } from "./Select";
 import { Tooltip } from "./Tooltip";
-import boardImage from "../assets/how-to-play/story.png";
-import corruptionImage from '../assets/how-to-play/corrupted-star-card.png';
 
 const defaultSlots = (numSlots: 2 | 3 | 4): PlayerSetup[] => DEFAULT_SIGNS[numSlots].map((sign, i) => ({ name: `Guardian ${i + 1}`, sign }));
 
@@ -102,11 +100,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
   const [seed, setSeed] = useState(() => loadLastSeed());
   const [favorites, setFavorites] = useState<FavoriteSeed[]>(() => loadFavoriteSeeds());
   const [referenceExpanded, setReferenceExpanded] = useState(false);
-  // "How to Play" sits as a 4th tab to the left of the 2/3/4-Guardian count tabs — selecting a
-  // count always jumps back to the "setup" tab (see changeCount below) so there's no dead-end
-  // where a count button looks selectable but silently does nothing while the guide is showing.
   const activeSlots = slots.slice(0, count);
-  const [activeTab, setActiveTab] = useState<"setup" | "howToPlay">("setup");
   const elements = activeSlots.map((s) => SIGNS[s.sign].element);
   const duplicateElements = new Set(elements).size !== elements.length;
   const update = (i: number, patch: Partial<PlayerSetup>) => {
@@ -114,7 +108,6 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
   };
   const changeCount = (n: 2 | 3 | 4) => {
     setCount(n);
-    setActiveTab("setup");
     const stored = loadLastSetups()[n];
     if (stored) setSlots((prev) => prev.map((s, i) => stored[i] ?? s));
     else setSlots(defaultSlots(n));
@@ -130,7 +123,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
   };
 
   useEffect(() => {
-    if (activeTab !== 'setup' || duplicateElements) return;
+    if (duplicateElements) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -145,7 +138,7 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeTab, duplicateElements, start]);
+  }, [duplicateElements, start]);
 
   const trimmedSeed = seed.trim();
   const alreadyFavorited = favorites.some((f) => f.seed === trimmedSeed);
@@ -164,7 +157,14 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
 
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-4 py-8 px-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate("home")}
+          className="px-2 py-1 rounded border text-xs font-bold tracking-widest uppercase"
+          style={{ borderColor: "#3b2d5e", color: "#a99cd4" }}
+        >
+          ◂ {t("common.backToHome")}
+        </button>
         <LanguageSwitcher />
       </div>
 
@@ -181,28 +181,16 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
       </div>
 
       <div className="flex justify-center gap-2 flex-wrap">
-        <button
-          onClick={() => setActiveTab("howToPlay")}
-          className="px-4 py-1.5 rounded border text-sm font-bold"
-          style={{
-            borderColor: activeTab === "howToPlay" ? "#5eb3ff" : "#3b2d5e",
-            color: activeTab === "howToPlay" ? "#0b0914" : "#5eb3ff",
-            background: activeTab === "howToPlay" ? "#5eb3ff" : "transparent",
-            boxShadow: activeTab === "howToPlay" ? "0 0 14px #5eb3ff" : "none"
-          }}
-        >
-          {t("setup.howToPlayTab")}
-        </button>
         {([2, 3, 4] as (2 | 3 | 4)[]).map((n) => (
           <button
             key={n}
             onClick={() => changeCount(n)}
             className="px-4 py-1.5 rounded border text-sm font-bold"
             style={{
-              borderColor: activeTab === "setup" && count === n ? "#ff00ff" : "#3b2d5e",
-              color: activeTab === "setup" && count === n ? "#0b0914" : "#c084fc",
-              background: activeTab === "setup" && count === n ? "#ff00ff" : "transparent",
-              boxShadow: activeTab === "setup" && count === n ? "0 0 14px #ff00ff" : "none"
+              borderColor: count === n ? "#ff00ff" : "#3b2d5e",
+              color: count === n ? "#0b0914" : "#c084fc",
+              background: count === n ? "#ff00ff" : "transparent",
+              boxShadow: count === n ? "0 0 14px #ff00ff" : "none"
             }}
           >
             {t("setup.guardianCount", { count: n })}
@@ -210,14 +198,6 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
         ))}
       </div>
 
-      {activeTab === "howToPlay" && (
-        <div className="rounded-lg border p-3" style={{ borderColor: "#3b2d5e", background: "rgba(16,12,30,0.8)" }}>
-          <HowToPlay t={t} screenshots={{ board: boardImage, corruption: corruptionImage }} />
-        </div>
-      )}
-
-      {activeTab === "setup" && (
-        <>
           <div className="flex flex-col gap-1">
             <div className="flex" style={{ alignItems: "baseline" }}>
               <label className={`text-[${BODY_FONT_SIZE}] font-bold tracking-widest uppercase px-1`} style={{ color: "#6d5f94" }}>
@@ -412,8 +392,6 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
             <div className="tracking-[0.25em]">Start ▸</div>
             <div className="text-[11px] tracking-widest opacity-70">Shift + Enter</div>
           </button>
-        </>
-      )}
     </div>
   );
 }

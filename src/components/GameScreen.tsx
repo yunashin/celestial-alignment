@@ -17,9 +17,10 @@ import { DeckTray } from "./DeckTray";
 import { EclipseTracker } from "./EclipseTracker";
 import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
+import { LeaveGameConfirmModal } from "./LeaveGameConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
-import { useBackgroundMusic } from "../hooks/useBackgroundMusic";
+import { reportGameTracker } from "../hooks/useBackgroundMusic";
 import { useIsMobileViewport } from "../hooks/useIsMobileViewport";
 import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
 import { usePinchZoomPan } from "../hooks/usePinchZoomPan";
@@ -61,6 +62,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const [rotation, setRotation] = useState<number | null>(null);
   const [shieldPreview, setShieldPreview] = useState<{ x: number; y: number } | null>(null);
   const [showEndTurnConfirm, setShowEndTurnConfirm] = useState(false);
+  // Which trigger is asking to leave an in-progress game — the in-app Back button/"B" shortcut, or
+  // the browser's own back button (intercepted via the history-guard effect below) — null when no
+  // leave confirmation is pending. Both funnel into the same LeaveGameConfirmModal; only the
+  // CONFIRM action differs by trigger (see confirmLeave below).
+  const [leaveIntent, setLeaveIntent] = useState<"back-button" | "browser-back" | null>(null);
   const [dismissedEndOverlay, setDismissedEndOverlay] = useState(false);
   const [starFlash, setStarFlash] = useState<PowerUp | null>(null);
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -85,10 +91,15 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // reclaimed height straight to the top pane's own `flex-1` (same mechanism as the D-pad's own
   // collapse), letting the board grow when a player wants to see more of it and isn't mid-action.
   const [bottomPaneVisible, setBottomPaneVisible] = useState(true);
-  // Starts/switches/stops entirely off this component's own mount lifecycle (see the hook's own
-  // doc comment) — GameScreen only exists while a game is in progress, so no extra "should music be
-  // playing" state is needed here.
-  useBackgroundMusic(state.tracker);
+  // The actual <audio> playback lives at the App level now (see useBackgroundMusic's own doc
+  // comment) so it plays continuously across every route and never restarts when a new game
+  // begins — this just reports the live tracker value up to that single shared instance so it can
+  // still drive the "urgent" music switch while a game is actually in progress. Reporting `null` on
+  // unmount (leaving the game entirely) hands music back to its calm default playlist mode.
+  useEffect(() => {
+    reportGameTracker(state.tracker);
+    return () => reportGameTracker(null);
+  }, [state.tracker]);
   const active = state.players[state.active];
   // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
   // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
@@ -115,6 +126,63 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   useEffect(() => {
     setBoardCursor(null);
   }, [state.active, state.phase]);
+
+  // Native browser prompt for the two leave-paths a React event handler can't intercept — a real
+  // page refresh, tab close, or typed/external navigation. Text is entirely browser-controlled
+  // (Chrome/Firefox/Safari all show their own generic "leave site?" wording regardless of
+  // `returnValue`); setting `returnValue` is what actually triggers the prompt, the string itself
+  // is vestigial (required by the legacy spec, ignored by every modern browser). Scoped to
+  // `phase === "playing"` only — a won/lost screen has no active progress left to lose.
+  useEffect(() => {
+    if (state.phase !== "playing") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [state.phase]);
+
+  // Intercepts the browser's own Back button during an in-progress game, showing the same
+  // LeaveGameConfirmModal the in-app Back button uses instead of silently navigating away — see
+  // requestBack/confirmLeave for the other half of this. The trick (a well-known SPA pattern): push
+  // a "guard" history entry the moment the game becomes active, at the SAME url as the real one
+  // underneath it. The first Back press only pops that harmless duplicate (no visible URL/route
+  // change — useRoute reads location.pathname, identical on both entries), which this handler
+  // catches and immediately re-arms by pushing a fresh guard, so the app is back in the exact same
+  // "one guard on top" state as before the press — from the player's perspective nothing happened
+  // except the confirmation modal appearing. Confirming "Leave" (confirmLeave) sets
+  // `leaveBypassRef` and calls `history.go(-2)` to actually pop both the guard AND the real "/play"
+  // entry in one go, landing on whatever page preceded it — that programmatic pop fires this SAME
+  // listener again, so the bypass ref is what stops it from re-arming/re-prompting a second time.
+  // Deliberately keyed on the boolean `state.phase === "playing"`, not `state.phase` itself, so this
+  // only re-runs (re-arming a fresh guard) on the actual transition INTO "playing", not on every
+  // in-turn state change.
+  //
+  // The initial push is idempotent (checks `history.state` first) — NOT just belt-and-suspenders:
+  // React 18 StrictMode deliberately double-invokes every effect on mount in dev (mount → cleanup →
+  // mount again) to surface missing-cleanup bugs. That cleanup can unregister the popstate listener
+  // fine, but it can't "unpush" a history entry the same way — without this check, dev builds would
+  // silently push TWO guard entries for one "entered playing" transition, throwing off confirmLeave's
+  // `history.go(-2)` (which assumes exactly one guard sits on top of the real "/play" entry) enough
+  // that confirming "Leave" would only pop back to the guard's own duplicate, landing right back on
+  // "/play" with the game still fully intact — a real bug, caught by testing this exact flow.
+  useEffect(() => {
+    if (state.phase !== "playing") return;
+    const alreadyGuarded = (window.history.state as { __leaveGuard?: boolean } | null)?.__leaveGuard === true;
+    if (!alreadyGuarded) window.history.pushState({ __leaveGuard: true }, "", window.location.href);
+    const onPopState = () => {
+      if (leaveBypassRef.current) {
+        leaveBypassRef.current = false;
+        return;
+      }
+      window.history.pushState({ __leaveGuard: true }, "", window.location.href);
+      setLeaveIntent("browser-back");
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase === "playing"]);
 
   // Scrolls the new active player's own board tile into view whenever a turn starts, if it's
   // currently scrolled out of view (or hidden behind the sticky Eclipse-Tracker/DeckTray header) —
@@ -178,6 +246,12 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // batch (or one from an earlier dispatch is still on screen) — see that effect's own doc comment
   // for why. Flushed by the effect right after it, once `messageQueue` drains back to empty.
   const effectsQueueRef = useRef<(() => void)[]>([]);
+  // Set to true immediately before a PROGRAMMATIC history.go() triggered by confirming
+  // "browser-back" leave intent (see confirmLeave/the history-guard effect below) — the popstate
+  // listener checks this first and, if set, clears it and returns without re-showing the modal,
+  // distinguishing "the confirm button just fired the real navigation" from "the player pressed
+  // Back again unprompted."
+  const leaveBypassRef = useRef(false);
 
   const addFlight = (from: DOMRect | null | undefined, to: DOMRect | null | undefined, color: string, glyph: string) => {
     if (!from || !to) return;
@@ -620,6 +694,29 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
   const doBack = () => dispatch({ type: "RESET" });
 
+  // Gates the in-app Back button/"B" shortcut behind LeaveGameConfirmModal while a game is actually
+  // in progress — WinBanner's and EndOverlay's own onReset still call doBack directly (unchanged),
+  // since those only ever render once the game has already ended, where there's no active progress
+  // left to lose by leaving.
+  const requestBack = () => {
+    if (state.phase === "playing") setLeaveIntent("back-button");
+    else doBack();
+  };
+  const cancelLeave = () => setLeaveIntent(null);
+  // Confirms leaving from whichever trigger asked — the in-app Back button just resets straight to
+  // the Setup form (same as it always did, still on the "play" route); the browser's own Back
+  // button instead needs to actually complete the navigation THAT press was trying to make (see the
+  // history-guard effect below for why a plain doBack() wouldn't do that on its own).
+  const confirmLeave = () => {
+    if (leaveIntent === "browser-back") {
+      leaveBypassRef.current = true;
+      window.history.go(-2);
+    } else {
+      doBack();
+    }
+    setLeaveIntent(null);
+  };
+
   const doConfirmDiscard = () => {
     dispatch({ type: "DISCARD", indices: Array.from(discardSel) });
     resetUi();
@@ -726,6 +823,15 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         return;
       }
 
+      // Same swallow-everything pattern as showEndTurnConfirm above, for LeaveGameConfirmModal.
+      if (leaveIntent) {
+        if (k === "enter") confirmLeave();
+        else if (k === "escape") cancelLeave();
+        else return;
+        e.preventDefault();
+        return;
+      }
+
       switch (k) {
         case "escape":
           // Escape resets the UI regardless, but if an action button (Move, Purify, a roster row,
@@ -792,7 +898,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           requestEndTurn();
           break;
         case "b":
-          doBack();
+          requestBack();
           break;
         case "1":
         case "2":
@@ -813,7 +919,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated, messageQueue]);
+  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated, messageQueue, leaveIntent]);
 
   return (
     // Fixed `h-dvh` + `overflow-hidden` on ALL breakpoints now (not just `md:`) — mobile used to let
@@ -873,7 +979,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
               overflow off-screen to the left and get clipped invisible. */}
           <Tooltip className="relative inline-flex justify-self-start" text={t("gameScreen.backTooltip")} side="right">
             <button
-              onClick={doBack}
+              onClick={requestBack}
               className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded border text-[11px] md:text-[${BODY_FONT_SIZE}px] font-bold tracking-widest uppercase`}
               style={{ borderColor: "#3b2d5e", color: "#a99cd4" }}
             >
@@ -1225,6 +1331,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         <EndOverlay reason={state.lossReason} onReset={doBack} onClose={() => setDismissedEndOverlay(true)} />
       )}
       {showEndTurnConfirm && <EndTurnConfirmModal onConfirm={doEndTurn} onCancel={() => setShowEndTurnConfirm(false)} />}
+      {leaveIntent && <LeaveGameConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       {/* z-[60] — deliberately above EndOverlay/EndTurnConfirmModal's z-50, so if a batch of
           important messages was generated by the same dispatch that also ended the game (e.g. an
           Eclipse Tracker hazard pushing the tracker to 100%), the player sees what happened BEFORE

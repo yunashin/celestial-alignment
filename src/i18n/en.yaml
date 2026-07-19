@@ -13,6 +13,32 @@ common:
   tagline: "Link the Edge Nodes to the Orrery before the Eclipse hits 100%"
   newRun: "New Run"
   stasisLabel: "STASIS"
+  backToHome: "Home"
+
+# The landing page (`/` — see App.tsx's route switch) — just the title/tagline and the three
+# top-level destinations. Reuses common.appNameLine1/2/tagline for the header rather than
+# duplicating them here.
+home:
+  play: "Play"
+  howToPlay: "How to Play"
+  settings: "Settings"
+
+# `/settings` — background music and sound-effect volume controls, persisted to localStorage (see
+# utils/settings.ts). Nothing here is gameplay state, so — like howToPlay above — these never need
+# interpolation params.
+settings:
+  musicVolume: "Music Volume"
+  sfxVolume: "Sound Effects Volume"
+  testSound: "Test Sound"
+
+# Shown when leaving an in-progress game via the in-app Back button, the "B" shortcut, or the
+# browser's own back button — see LeaveGameConfirmModal/GameScreen's leave-guard effect. Refreshing
+# or closing the tab instead trigger the browser's own native (unstyled, untranslatable) prompt.
+leaveGameModal:
+  title: "Leave the game?"
+  text: "Your current game is still in progress and hasn't been saved — leaving now will lose all progress."
+  stay: "Stay"
+  leave: "Leave"
 
 setup:
   guardianCount: "{count} Guardians"
@@ -32,7 +58,6 @@ setup:
   playerNamePlaceholder: "Guardian {n}"
   playerSignSelectLabel: "Guardian {n} sign"
   duplicateElementsWarning: "Each Guardian needs a different element — the win condition requires one path per player element."
-  howToPlayTab: "✦ How to Play"
   resetToDefaults: "Reset to Defaults"
   resetToDefaultsTooltip: "Clear saved names/signs for this player count and restore the default lineup."
 

@@ -11,6 +11,22 @@
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>" />
   <title>Celestial Alignment</title>
+  <!-- Other half of the GitHub Pages SPA redirect trick — see public/404.html's own comment for
+       the full explanation. Decodes the path 404.html encoded into `?/...` back into a real
+       pushState-updated URL BEFORE React mounts (src/hooks/useRoute.ts reads location.pathname on
+       its very first render), so a direct load of e.g. /celestial-alignment/play boots straight
+       into the Play screen instead of flashing Home first. Must run before main.tsx's own script
+       tag below. -->
+  <script>
+    (function (l) {
+      if (l.search[1] === "/") {
+        var decoded = l.search.slice(1).split("&").map(function (s) {
+          return s.replace(/~and~/g, "&");
+        }).join("?");
+        window.history.replaceState(null, "", l.pathname.slice(0, -1) + decoded + l.hash);
+      }
+    })(window.location);
+  </script>
 </head>
 
 <body>
