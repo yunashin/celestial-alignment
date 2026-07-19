@@ -6,11 +6,11 @@ export function EclipseTracker({ value }: { value: number }) {
   return (
     <div>
       <div className="flex justify-between items-baseline mb-1">
-        <span className={`text-[12px] font-bold tracking-widest uppercase`} style={{ color: "#c084fc" }}>
+        <span className={`text-[11px] md:text-sm font-bold tracking-widest uppercase`} style={{ color: "#c084fc" }}>
           ☽ {t("gameScreen.eclipseTracker")}
         </span>
         <span
-          className="text-sm font-bold"
+          className="text-sm md:text-xl font-bold"
           style={{
             color: critical ? "#ff00ff" : "#00ffff",
             textShadow: `0 0 8px ${critical ? "#ff00ff" : "#00ffff"}`,
@@ -21,7 +21,7 @@ export function EclipseTracker({ value }: { value: number }) {
         </span>
       </div>
       <div
-        className="relative h-5 rounded-full overflow-hidden border"
+        className="relative h-5 md:h-6 rounded-full overflow-hidden border"
         style={{ borderColor: "#ff00ff55", background: "#140d24", boxShadow: "inset 0 0 10px rgba(255,0,255,0.2)" }}
       >
         <div

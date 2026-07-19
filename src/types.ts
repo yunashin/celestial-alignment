@@ -1,3 +1,5 @@
+import type { MessageKind } from "./engine/messageKinds";
+
 export type Element = "FIRE" | "WATER" | "EARTH" | "AIR";
 export type Dir = "top" | "right" | "bottom" | "left";
 export type Sign =
@@ -121,6 +123,11 @@ export interface GameState {
   turn: number;
   log: string[];
   messageLog: string[];
+  // Parallel to messageLog (same unshift/cap-20 shape, kept in lockstep by important() — see
+  // log.ts) — lets a UI surface that only sees resolved message TEXT still know what KIND of event
+  // produced each entry, e.g. to pick an ImportantMessagesModal title or a sound cue without having
+  // to sniff the message text itself.
+  messageKindLog: MessageKind[];
   messageSeq: number;
   ariesUsed: boolean;
   cancerShieldTurnsLeft: number;
@@ -159,6 +166,19 @@ export interface GameState {
   lastChainEvent: { tiles: string[]; start: Point; end: Point } | null;
   surgeEventSeq: number;
   lastSurgeEvent: { x: number; y: number; element: Element } | null;
+  // The remaining seq/event pairs below exist purely to drive sound cues (see utils/sound.ts and
+  // GameScreen's wiring of it) for actions that don't otherwise bump a dedicated counter — Purify
+  // and Cosmic Draw don't raise an `important()` message (they're routine, not curated-feed-worthy,
+  // see log.ts's own doc comment), and a completed path/an actual HP loss both need a more specific
+  // signal than the general messageSeq/eclipseEventSeq counters already provide.
+  purifySeq: number;
+  cosmicDrawSeq: number;
+  pathCompleteSeq: number;
+  lastPathCompleteElement: Element | null;
+  // Bumped only on an actual HP loss (never on a Cancer-shield block — that's already its own
+  // distinct signal via shieldBlockSeq/lastShieldBlock above) — see damage() in eclipse.ts.
+  damageEventSeq: number;
+  lastDamageEvent: { playerId: number } | null;
 }
 
 export interface PlayerSetup {
@@ -178,7 +198,10 @@ export type GameAction =
   | { type: "DISCARD"; indices: number[] }
   | { type: "END_TURN" };
 
+export type DifficultyStarNumber = 1 | 2 | 3;
+
 export type RecommendedSeed = {
   seed: string;
   nickname: string;
+  difficultyStarNumber: DifficultyStarNumber;
 };

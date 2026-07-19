@@ -13,6 +13,32 @@ common:
   tagline: "Link the Edge Nodes to the Orrery before the Eclipse hits 100%"
   newRun: "New Run"
   stasisLabel: "STASIS"
+  backToHome: "Home"
+
+# The landing page (`/` — see App.tsx's route switch) — just the title/tagline and the three
+# top-level destinations. Reuses common.appNameLine1/2/tagline for the header rather than
+# duplicating them here.
+home:
+  play: "Play"
+  howToPlay: "How to Play"
+  settings: "Settings"
+
+# `/settings` — background music and sound-effect volume controls, persisted to localStorage (see
+# utils/settings.ts). Nothing here is gameplay state, so — like howToPlay above — these never need
+# interpolation params.
+settings:
+  musicVolume: "Music Volume"
+  sfxVolume: "Sound Effects Volume"
+  testSound: "Test Sound"
+
+# Shown when leaving an in-progress game via the in-app Back button, the "B" shortcut, or the
+# browser's own back button — see LeaveGameConfirmModal/GameScreen's leave-guard effect. Refreshing
+# or closing the tab instead trigger the browser's own native (unstyled, untranslatable) prompt.
+leaveGameModal:
+  title: "Leave the game?"
+  text: "Your current game is still in progress and hasn't been saved — leaving now will lose all progress."
+  stay: "Stay"
+  leave: "Leave"
 
 setup:
   guardianCount: "{count} Guardians"
@@ -21,7 +47,8 @@ setup:
   boardSeedPlaceholder: "Leave blank for a random board"
   saveSeedTooltip: "Save this seed as a favorite"
   favoriteSeedTooltip: "Seed: {seed}"
-  recommendedSeedTooltip: "Recommended Seed"
+  recommendedSeedTooltipTitle: "Recommended Seed"
+  recommendedSeedTooltipText: "Difficulty Level {difficultyStarNumber}"
   renameSeedTooltip: "Edit to give your seed a nickname"
   removeSeedTooltip: "Delete seed from favorites"
   referenceTitle: "Zodiac Guardians Reference"
@@ -31,7 +58,6 @@ setup:
   playerNamePlaceholder: "Guardian {n}"
   playerSignSelectLabel: "Guardian {n} sign"
   duplicateElementsWarning: "Each Guardian needs a different element — the win condition requires one path per player element."
-  howToPlayTab: "✦ How to Play"
   resetToDefaults: "Reset to Defaults"
   resetToDefaultsTooltip: "Clear saved names/signs for this player count and restore the default lineup."
 
@@ -293,6 +319,28 @@ endTurnModal:
   keepPlaying: "Keep Playing"
   confirm: "End Turn"
 
+eventModal:
+  title: "✦ What Happened ✦"
+  continue: "Continue"
+  titles:
+    GAME_START: "The Challenge Begins"
+    WIN: "✦ Alignment Complete ✦"
+    PATH_COMPLETE: "Path Complete"
+    SHOOTING_STAR: "Collected Shooting Star"
+    ASTEROID: "Asteroid Strike"
+    ECLIPSE_CORRUPTION: "Corruption Spreads"
+    ECLIPSE_VOID: "A Black Hole Forms"
+    ECLIPSE_SURGE: "Eclipse Surges"
+    ECLIPSE_DAMAGE: "Eclipse Damage"
+    CHAIN: "Chain Reaction"
+    ELEMENT_SURGE: "Element Surge"
+    ENCLOSED_LOOP: "Loop Sealed"
+    CORRUPTION_DECAY: "Card Lost to Corruption"
+    STASIS_REBOOT: "Guardian Rebooted"
+    SELF_HEAL: "Guardian Rests"
+    CANCER_SHIELD: "Lunar Shield Fades"
+    DAMAGE: "Guardian Injured"
+
 winBanner:
   title: "✦ Alignment Complete ✦"
   text: "Every starlight path burns into the Orrery. The constellation holds."
@@ -340,6 +388,7 @@ log:
   shootingStarBonusHand: "💫 Shooting Star! 💫 Every Guardian's hand size grows by {amount} from now on."
   shootingStarHealUnlock: "💫 Shooting Star! 💫 Every Guardian can heal themselves {amount} HP from now on."
   asteroidHeader: "☄️ An asteroid tears loose from ({sx},{sy}) and hurtles toward ({dx},{dy})!"
+  asteroidHeaderImportant: "☄️ An asteroid tears loose and hurtles across the board!"
   asteroidPassesCompletedPath: "　↳ streaks harmlessly past the completed path at ({x},{y})."
   asteroidGlancesEnclosed: "　↳ glances off the closed loop at ({x},{y}), unable to breach it."
   asteroidShattersLunarShield: "　↳ shatters against Cancer's Lunar Shield at ({x},{y})."
@@ -350,6 +399,7 @@ log:
   asteroidScoursCorruption: "　↳ scours corrupted ground at ({x},{y})."
   asteroidComesToRest: "　↳ comes to rest at ({x},{y})."
   asteroidDestroysSummary: "☄️ An asteroid from ({sx},{sy}) destroys {count} card{plural} on its way to ({dx},{dy})."
+  asteroidDestroysSummaryImportant: "☄️ An asteroid destroys {count} card{plural} on its way across the board."
   win: "✨ ALIGNMENT COMPLETE — all {count} starlight paths feed the Orrery!"
   lossTracker: "The Eclipse Tracker reached 100%. Darkness swallows the constellation."
   lossStasis: "All Guardians drift in Stasis. No one remains to tend the starlight."
@@ -359,12 +409,15 @@ log:
   placeRebelWave: " — Rebel Wave rotates it into alignment"
   placeVanguard: " — Vanguard: 0 AP"
   chain: "🔗{glyph} {label} chain of {count} cards aligns from ({sx},{sy}) to ({ex},{ey})"
+  chainImportant: "🔗{glyph} {label} chain of {count} cards aligns"
   chainEased: " — Eclipse Tracker eases by {pct}%."
   chainAlreadyDrained: " — Eclipse Tracker is already at 0%! 💠"
   airSurge: "💨💨💨 Air Surge 💨💨💨 {name} draws a free card."
   fireSurgeCleanse: "🔥🔥🔥 Fire Surge 🔥🔥🔥 Corruption at ({x},{y}) burns away."
+  fireSurgeCleanseImportant: "🔥🔥🔥 Fire Surge 🔥🔥🔥 Corruption burns away."
   fireSurgeNoTarget: "🔥 Fire Surge 🔥 No adjacent corruption to burn."
   earthSurge: "⛰️⛰️⛰️ Earth Surge ⛰️⛰️⛰️ ({x},{y}) is locked against corruption."
+  earthSurgeImportant: "⛰️⛰️⛰️ Earth Surge ⛰️⛰️⛰️ A card is locked against corruption."
   waterSurgeHeal: "💧💧💧 Water Surge 💧💧💧 {name} is healed to {hp} HP."
   waterSurgeNoTarget: "💧 Water Surge 💧 Everyone is already at full HP."
   pathComplete: "🌟 The {label} path blazes into the Orrery!"
@@ -383,14 +436,17 @@ log:
   cosmicDiscardBalanced: " (Cosmic Balance: 0 AP)"
   cosmicDiscardSuffix: " and redraws."
   corruptionDecay: "🌑 Corruption's grip finally claims {cardPhrase}card at ({x},{y}) — it crumbles to dust."
+  corruptionDecayImportant: "🌑 Corruption's grip finally claims {cardPhrase}card — it crumbles to dust."
   selfHeal: "💗 {name} rests quietly and restores {amount} HP ({hp}/{maxHp})."
   stasisReboot: "🔄 {name} reboots at 1 HP — an adjacent Guardian pulled them from Stasis."
   lunarShieldAbsorbs: "🌊 Lunar Shield absorbs {source} damage aimed at {name}."
   damageTaken: "💥 {name} takes {amount} damage from {source} ({hp} HP)."
   knockedIntoStasis: "❄ {name} is knocked into Stasis!"
   corruptionSeize: "🌀{glyph} {label} corruption {glyph}🌀 takes over card at ({x},{y}) — tracker +{pct}%."
+  corruptionSeizeImportant: "🌀{glyph} {label} corruption {glyph}🌀 takes over a card — tracker +{pct}%."
   corruptionNoTarget: "🌀 Eclipse Corruption 🌀 No vulnerable {label} corruption targets — tracker +{pct}%."
   voidForms: "🕳 Eclipse Black Hole 🕳 A Black Hole forms at ({x},{y}) — tracker +{pct}%."
+  voidFormsImportant: "🕳 Eclipse Black Hole 🕳 A Black Hole forms — tracker +{pct}%."
   voidNoSpace: "🕳 Eclipse Black Hole 🕳 The Black Hole has no space to form — tracker +{pct}% ({total}%)."
   eclipseSurge: "⚡🌒 Eclipse Surge 🌒⚡ Tracker jumped {amt}%"
   eclipseSurgeScaling: " (+{pct}% for {count} corrupted card{plural})."

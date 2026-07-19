@@ -31,6 +31,23 @@ html, body {
     overscroll-behavior-y: none;
   }
 }
+/* Keeps a scroll container's scroll POSITION and wheel/touch/keyboard scrollability fully intact —
+   only the visible scrollbar track/thumb is suppressed. Used on the TOP PANE (board + header),
+   which now scrolls at every breakpoint (see GameScreen's own doc comment on that div) — a visible
+   scrollbar there competed for space against the board/edge labels and read as UI chrome rather
+   than a deliberate feature, unlike the right sidebar's scrollbar which sits in an obviously
+   list-like panel. scrollbar-width: none (Firefox) plus -ms-overflow-style: none (legacy Edge) are
+   plain properties; the ::-webkit-scrollbar pseudo-element rule below is the Chromium/Safari
+   equivalent — between the three this covers every engine actually in use. NOTE: this whole file is
+   a JS template literal (see the backtick that opens GLOBAL_CSS above) — never use a backtick
+   character in a comment anywhere in this file, it silently terminates the string early. */
+.ca-hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ca-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 @keyframes caPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes caSpin { to { transform: rotate(360deg); } }
 @keyframes caFlow { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }

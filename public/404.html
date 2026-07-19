@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Celestial Alignment</title>
+  <!-- GitHub Pages serves this file (and ONLY this file) for any path it doesn't recognize as a
+       real file — which, for a client-side-routed SPA, is every one of our own in-app routes
+       (/play, /how-to-play, /settings) whenever they're loaded directly or refreshed, since GH
+       Pages has no server to rewrite those paths back to index.html the way a real host would.
+       This is the standard "Single Page Apps for GitHub Pages" redirect trick (see
+       https://github.com/rafgraph/spa-github-pages): encode the intended path into a query string,
+       hard-redirect to the real index.html, then a matching script in index.html's own <head>
+       (see that file) decodes it back into a pushState call before React ever mounts, so the app
+       boots straight into the right route with no visible flash of the wrong page.
+       pathSegmentsToKeep = 1 — the app is served under the single "/celestial-alignment" path
+       segment (see vite.config.ts's `base`), which must survive the redirect as the app's own
+       root; everything after it (our own routes) is what gets encoded into the query string. -->
+  <script>
+    var pathSegmentsToKeep = 1;
+    var l = window.location;
+    l.replace(
+      l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") +
+      l.pathname.split("/").slice(0, 1 + pathSegmentsToKeep).join("/") + "/?/" +
+      l.pathname.slice(1).split("/").slice(pathSegmentsToKeep).join("/").replace(/&/g, "~and~") +
+      (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+      l.hash
+    );
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>

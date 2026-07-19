@@ -127,7 +127,7 @@ export const SHOOTING_STAR_SELF_HEAL_AMOUNT = 1;
 // stars — see assignShootingStarPowerUps in engine/board.ts. Reorder this list to change the
 // priority; a 4-player game always uses every element (no "off" quadrant to avoid), so it skips
 // this prioritization entirely and shuffles all 4 types freely.
-export const SHOOTING_STAR_POWER_UP_PRIORITY: PowerUp[] = ["BONUS_AP", "TRACKER_DOWN", "BONUS_HAND"];
+export const SHOOTING_STAR_POWER_UP_PRIORITY: PowerUp[] = ["BONUS_AP", "HEAL_UNLOCK", "TRACKER_DOWN"];
 
 // ============================================================================
 // BOARD SHAPE, VISUALS, AND SIGN/CARD CONTENT — structural constants below this line don't affect
@@ -260,14 +260,17 @@ export const DEFAULT_SIGNS: { [key: number]: Sign[] } = {
 export const RECOMMENDED_SEEDS: RecommendedSeed[] = [
   {
     seed: "7c971n7w",
-    nickname: "Cassiopeia"
+    nickname: "Cassiopeia",
+    difficultyStarNumber: 1
   },
   {
     seed: "q9a4jxda",
-    nickname: "Orion"
+    nickname: "Orion",
+    difficultyStarNumber: 2
   },
   {
     seed: "0mnqcrdo",
-    nickname: "Ursa Major"
+    nickname: "Ursa Major",
+    difficultyStarNumber: 3
   },
 ];

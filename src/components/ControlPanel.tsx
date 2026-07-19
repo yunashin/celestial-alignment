@@ -6,7 +6,6 @@ import type { GameState, Player, PowerUp, UiMode } from "../types";
 import { article } from "../utils/grammar";
 import { ActionButtons } from "./ActionButtons";
 import { ApPips } from "./ApPips";
-import { EclipseTracker } from "./EclipseTracker";
 import { Tooltip } from "./Tooltip";
 
 type Tab = "status" | "log";
@@ -130,13 +129,6 @@ export function ControlPanel({
 
       {tab === "status" && (
         <div className="flex flex-col gap-5 md:gap-6 flex-1 min-h-0">
-          {/* Hidden on mobile — GameScreen renders its own copy of EclipseTracker in its mobile-only
-              bottom pane, positioned just above the mobile ActionButtons copy (same "render twice,
-              toggle via `md:`" pattern already used for ActionButtons/CardHand). */}
-          <div className="hidden md:block rounded-lg" style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}>
-            <EclipseTracker value={state.tracker} />
-          </div>
-
           <div className="rounded-lg border p-3" style={{ borderColor: `${elc}66`, background: ELEMENT_META[p.element].soft }}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-col gap-1">
