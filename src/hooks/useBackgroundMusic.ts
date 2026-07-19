@@ -3,10 +3,14 @@ import song1 from "../assets/music/CASong1.mp3";
 import song2 from "../assets/music/CASong2.mp3";
 import song3 from "../assets/music/CASong3.mp3";
 import song4 from "../assets/music/CASong4.mp3";
+import song5 from "../assets/music/CASong5.mp3";
+import song6 from "../assets/music/CASong6.mp3";
+import song7 from "../assets/music/CASong7.mp3";
+import song8 from "../assets/music/CASong8.mp3";
 import urgentSong1 from "../assets/music/CAUrgentSong1.mp3";
 import urgentSong2 from "../assets/music/CAUrgentSong2.mp3";
 
-const PLAYLIST = [song1, song2, song3, song4];
+const PLAYLIST = [song5, song3, song6, song4, song7, song1, song2, song8];
 const VOLUME = 0.25;
 
 type Mode = "playlist" | "urgent1" | "urgent2";
@@ -15,8 +19,8 @@ type Mode = "playlist" | "urgent1" | "urgent2";
  * and "75% or higher") don't overlap — a tracker sitting exactly at 75 always reads as the more
  * urgent band. */
 function modeForTracker(tracker: number): Mode {
-  if (tracker >= 75) return "urgent2";
-  if (tracker >= 50) return "urgent1";
+  if (tracker >= 80) return "urgent2";
+  if (tracker >= 60) return "urgent1";
   return "playlist";
 }
 
@@ -97,15 +101,15 @@ export function useBackgroundMusic(tracker: number) {
     if (mode === "urgent1") {
       audio.loop = true;
       audio.src = urgentSong1;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     } else if (mode === "urgent2") {
       audio.loop = true;
       audio.src = urgentSong2;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     } else {
       audio.loop = false;
       audio.src = PLAYLIST[playlistIndexRef.current];
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     }
   }, [tracker]);
 }

@@ -1,4 +1,4 @@
-import type { PlayerSetup } from "../types";
+import type { DifficultyStarNumber, PlayerSetup } from "../types";
 
 const SETUPS_KEY = "celestial-alignment:last-setups";
 const COUNT_KEY = "celestial-alignment:last-count";
@@ -11,6 +11,7 @@ export interface FavoriteSeed {
   id: string;
   seed: string;
   nickname: string;
+  difficultyStarNumber?: DifficultyStarNumber;
 }
 
 /** All storage here is best-effort — a disabled/unavailable localStorage (private browsing,

@@ -70,9 +70,9 @@ function FavoriteSeedRow({
           style={{ borderColor: "#5eb3ff", background: "#0b0914", color: "#f1eeff" }}
         />
       ) : (
-        <Tooltip className="flex-1 min-w-0 text-left text-xs truncate" text={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltip") : t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="right">
+        <Tooltip className="flex-1 min-w-0 text-left text-xs truncate" title={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltipTitle") : undefined} text={isDefaultRecommendedSeed ? t("setup.recommendedSeedTooltipText", { difficultyStarNumber: fav.difficultyStarNumber || 1 }) : t("setup.favoriteSeedTooltip", { seed: fav.seed })} side="right">
           <button type="button" onClick={() => onUse(fav.seed)} className="w-full text-left" style={{ color: "#c084fc" }}>
-            {isFav ? "★" : "☆"} {fav.nickname} {isDefaultRecommendedSeed && "✦"}
+            {isFav ? "★" : "☆"} {fav.nickname} {isDefaultRecommendedSeed && "✦".repeat(fav.difficultyStarNumber || 1)}
           </button>
         </Tooltip>
       )}
@@ -271,7 +271,20 @@ export function SetupScreen({ onStart }: { onStart: (setup: PlayerSetup[], seed?
                     const matchingSavedFavorite = favorites.find((f) => f.seed === recommendedSeed);
                     const isFav = Boolean(matchingSavedFavorite);
                     return (
-                      <FavoriteSeedRow key={recommendedSeed} fav={{ ...recommendation, id: isFav ? matchingSavedFavorite.id : recommendedSeed }} isFav={isFav} seed={seed} t={t} onUse={setSeed} onRemove={isFav ? removeFavorite : undefined} />
+                      <FavoriteSeedRow
+                        key={recommendedSeed}
+                        fav={{
+                          id: isFav ? matchingSavedFavorite.id : recommendedSeed,
+                          seed: recommendation.seed,
+                          nickname: recommendation.nickname,
+                          difficultyStarNumber: recommendation.difficultyStarNumber
+                        }}
+                        isFav={isFav}
+                        seed={seed}
+                        t={t}
+                        onUse={setSeed}
+                        onRemove={isFav ? removeFavorite : undefined}
+                      />
                     )
                   })
                 )}
