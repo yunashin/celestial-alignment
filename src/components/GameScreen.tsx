@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BODY_FONT_SIZE, ELEMENT_META, ELEMENTS, HEIGHT, WIDTH } from "../constants";
 import { computeNetwork, computeWinGlow, isPathComplete, isValidShieldAnchor, key, rotateN, shieldTiles } from "../engine/board";
 import { computeLunarShieldTiles } from "../engine/eclipse";
+import { pickTitleKind } from "../engine/messageKinds";
 import { gameReducer } from "../engine/reducer";
 import { canConvertHandEarth, canPurify, canScorpioHeal, canUseVirgoShield, getAffordablePlacements, getAffordablePurifyTargets, getValidMoves, hasAnyAction, placementCost } from "../engine/rules";
 import { useTranslation } from "../i18n";
 import type { GameAction, GameState, PowerUp, UiMode } from "../types";
+import type { SoundId } from "../utils/sound";
+import { playSound, resolveSoundConflict } from "../utils/sound";
 import { ActionButtons } from "./ActionButtons";
 import { ApBadge } from "./ApBadge";
 import { CardHand } from "./CardHand";
@@ -16,12 +19,13 @@ import { EndOverlay } from "./EndOverlay";
 import { EndTurnConfirmModal } from "./EndTurnConfirmModal";
 import { Flight, FlightLayer } from "./FlightLayer";
 import { GridBoard } from "./GridBoard";
+import { useBackgroundMusic } from "../hooks/useBackgroundMusic";
 import { useIsMobileViewport } from "../hooks/useIsMobileViewport";
 import { useIsPortraitViewport } from "../hooks/useIsPortraitViewport";
 import { usePinchZoomPan } from "../hooks/usePinchZoomPan";
+import { ImportantMessagesModal } from "./ImportantMessagesModal";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SeedDisplay } from "./SeedDisplay";
-import { StatusMessage } from "./StatusMessage";
 import { Tooltip } from "./Tooltip";
 import { WinBanner } from "./WinBanner";
 
@@ -36,7 +40,17 @@ interface EventBaseline {
   chainEventSeq: number;
   surgeEventSeq: number;
   selfHealSeq: number;
+  shootingStarSeq: number;
+  purifySeq: number;
+  cosmicDrawSeq: number;
+  pathCompleteSeq: number;
+  damageEventSeq: number;
   messageSeq: number;
+}
+
+interface MessageBatch {
+  title: string;
+  messages: string[];
 }
 
 export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a: GameAction) => void }) {
@@ -56,7 +70,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const [selfHealFlashPlayerId, setSelfHealFlashPlayerId] = useState<number | null>(null);
   const [chainGlowTiles, setChainGlowTiles] = useState<Set<string> | null>(null);
   const [surgeTile, setSurgeTile] = useState<{ x: number; y: number } | null>(null);
-  const [statusBatch, setStatusBatch] = useState<{ id: number; messages: string[] }>({ id: 0, messages: [] });
+  // Each entry is one dispatch's full batch of `important()` messages (chronological order) plus
+  // the title picked for that batch (see pickTitleKind), queued up and shown one batch at a time
+  // via ImportantMessagesModal — see that component's own doc comment. The seq-diffing effect below
+  // pushes a new batch; onContinue pops the front one.
+  const [messageQueue, setMessageQueue] = useState<MessageBatch[]>([]);
   const [boardCursor, setBoardCursor] = useState<{ x: number; y: number } | null>(null);
   // Mobile-only D-pad drawer — defaults open (the board cursor is the only way to place/move via
   // touch without tapping tiles directly), but collapsible so a player who prefers tapping the
@@ -67,6 +85,10 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   // reclaimed height straight to the top pane's own `flex-1` (same mechanism as the D-pad's own
   // collapse), letting the board grow when a player wants to see more of it and isn't mid-action.
   const [bottomPaneVisible, setBottomPaneVisible] = useState(true);
+  // Starts/switches/stops entirely off this component's own mount lifecycle (see the hook's own
+  // doc comment) — GameScreen only exists while a game is in progress, so no extra "should music be
+  // playing" state is needed here.
+  useBackgroundMusic(state.tracker);
   const active = state.players[state.active];
   // Named `boardRotated`, not `rotation`/`rotated`, to stay clearly distinct from Aquarius's own
   // per-card `rotation` state above (quarter-turns on a single hand card before placing it) — this
@@ -95,8 +117,8 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   }, [state.active, state.phase]);
 
   // Scrolls the new active player's own board tile into view whenever a turn starts, if it's
-  // currently scrolled out of view (or hidden behind the sticky StatusMessage/DeckTray/Eclipse-
-  // Tracker header) — the top pane's own vertical scroll (used to reach the board's bottom edge
+  // currently scrolled out of view (or hidden behind the sticky Eclipse-Tracker/DeckTray header) —
+  // the top pane's own vertical scroll (used to reach the board's bottom edge
   // when the board is taller than the available height, see the top pane's own doc comment
   // further down) doesn't otherwise track whose turn it is, so a player who scrolled down to see
   // a distant part of the board on someone else's turn could otherwise start their own turn
@@ -149,15 +171,13 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const topPaneRef = useRef<HTMLDivElement>(null);
   const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const trackerRowRef = useRef<HTMLDivElement>(null);
   const eventBaselineRef = useRef<EventBaseline | null>(null);
-
-  useEffect(() => {
-    if (!state.lastShootingStarEvent) return;
-    setStarFlash(state.lastShootingStarEvent.type);
-    const t = setTimeout(() => setStarFlash(null), 1500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.lastShootingStarEvent?.seq]);
+  // Visual effects (flights/flashes) and sound cues queued up by the diffing effect below instead
+  // of applied immediately, whenever the SAME dispatch also produced an ImportantMessagesModal
+  // batch (or one from an earlier dispatch is still on screen) — see that effect's own doc comment
+  // for why. Flushed by the effect right after it, once `messageQueue` drains back to empty.
+  const effectsQueueRef = useRef<(() => void)[]>([]);
 
   const addFlight = (from: DOMRect | null | undefined, to: DOMRect | null | undefined, color: string, glyph: string) => {
     if (!from || !to) return;
@@ -175,12 +195,55 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   };
   const removeFlight = (id: string) => setFlights((fs) => fs.filter((f) => f.id !== id));
 
-  // Diffs a handful of "seq" counters the reducer bumps on draws/discards/eclipse/asteroid/shuffle
-  // events (see types.ts's GameState) against the previous render's baseline, and turns each change
-  // into a flying-card ghost or a brief flash. Skipped entirely on the render right after mount
-  // (baseline is null) so the initial hand deal doesn't animate.
+  // Diffs a handful of "seq" counters the reducer bumps on draws/discards/eclipse/asteroid/shuffle/
+  // purify/cosmic-draw/path-complete/damage events (see types.ts's GameState) against the previous
+  // render's baseline, and turns each change into a flying-card ghost, a brief flash, and/or a
+  // sound cue. Skipped entirely on the render right after mount (baseline is null) so the initial
+  // hand deal doesn't animate.
+  //
+  // The important-messages batch (if this dispatch produced one) is computed FIRST, before any of
+  // the flight/flash/sound triggers below, specifically so `deferEffects` can gate every one of
+  // them: a board effect or sound cue that fires from the SAME dispatch that also pops up
+  // ImportantMessagesModal would otherwise play out immediately, invisibly, behind/underneath the
+  // modal's backdrop while the player is still reading it — `runEffect` below routes each one
+  // through `effectsQueueRef` instead whenever a batch is showing (or about to show), and the
+  // separate flush effect right after this one replays them all once the player has dismissed
+  // everything queued (messageQueue drains back to empty).
   useEffect(() => {
     const prev = eventBaselineRef.current;
+
+    const prevMessageSeq = prev ? prev.messageSeq : 0;
+    let newBatch: MessageBatch | null = null;
+    if (state.messageSeq !== prevMessageSeq) {
+      // messageLog/messageKindLog are unshift-newest-first and capped at 20 — the delta tells us
+      // exactly how many of their front entries are new since last render (a single dispatch can
+      // call `important()` more than once), even across that cap.
+      const newCount = Math.min(state.messageSeq - prevMessageSeq, state.messageLog.length);
+      const freshMessages = state.messageLog.slice(0, newCount).reverse(); // oldest-of-batch first
+      const freshKinds = state.messageKindLog.slice(0, newCount).reverse();
+      if (freshMessages.length) {
+        const titleKind = pickTitleKind(freshKinds);
+        const title = titleKind ? t(`eventModal.titles.${titleKind}`) : t("eventModal.title");
+        newBatch = { title, messages: freshMessages };
+      }
+    }
+    // Unlike the flight/flash/sound triggers below (which would spuriously replay the initial hand
+    // deal/board setup if not skipped on mount), the important-messages modal SHOULD surface the
+    // very first batch of `important()` messages from game init (e.g. "The Orrery awakens...") —
+    // there's no prior message on screen for it to jump away from, so this runs even when `prev` is
+    // null (the messageSeq diff above already handles that: prevMessageSeq falls back to 0).
+    if (newBatch) {
+      const batch = newBatch;
+      setMessageQueue((q) => [...q, batch]);
+    }
+
+    const deferEffects = !!newBatch || messageQueue.length > 0;
+    const runEffect = (fn: () => void) => {
+      if (deferEffects) effectsQueueRef.current.push(fn);
+      else fn();
+    };
+    const soundRequests: SoundId[] = [];
+
     if (prev) {
       const handEl = handMobileRef.current?.offsetParent ? handMobileRef.current : handDesktopRef.current;
 
@@ -188,12 +251,16 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
       if (active.hand.length > prevActiveLen && handEl) {
         const drawn = active.hand.length - prevActiveLen;
         const toRect = handEl.getBoundingClientRect();
-        for (let i = 0; i < drawn; i++) addFlight(starDeckRef.current?.getBoundingClientRect(), toRect, "#e2e8f0", "★");
+        const fromRect = starDeckRef.current?.getBoundingClientRect();
+        for (let i = 0; i < drawn; i++) runEffect(() => addFlight(fromRect, toRect, "#e2e8f0", "★"));
       }
 
       if (state.discardEventSeq !== prev.discardEventSeq && handEl) {
-        addFlight(handEl.getBoundingClientRect(), discardRef.current?.getBoundingClientRect(), "#6d5f94", "♻");
+        const fromRect = handEl.getBoundingClientRect();
+        const toRect = discardRef.current?.getBoundingClientRect();
+        runEffect(() => addFlight(fromRect, toRect, "#6d5f94", "♻"));
       }
+      if (state.cosmicDrawSeq !== prev.cosmicDrawSeq) soundRequests.push("COSMIC_DRAW");
 
       if (state.eclipseEventSeq !== prev.eclipseEventSeq && state.lastEclipseEvent) {
         const ev = state.lastEclipseEvent;
@@ -212,61 +279,97 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           toRect = orreryEl?.getBoundingClientRect() ?? boardWrapRef.current?.getBoundingClientRect() ?? null;
         }
         const glyph = ev.kind === "CORRUPTION" ? "🌑" : ev.kind === "VOID" ? "🕳" : ev.kind === "DAMAGE" ? "💥" : "⚡";
-        addFlight(eclipseDeckRef.current?.getBoundingClientRect(), toRect, "#c084fc", glyph);
+        const fromRect = eclipseDeckRef.current?.getBoundingClientRect();
+        const landedRect = toRect;
+        runEffect(() => addFlight(fromRect, landedRect, "#c084fc", glyph));
+        // Only a tile actually being seized/formed counts as "a tile got corrupted"/"a black hole
+        // appeared" for sound purposes — the no-valid-target fallback (ev.x === null) just bumps
+        // the tracker with nothing to point a cue at.
+        if (ev.kind === "CORRUPTION" && ev.x !== null) soundRequests.push("CORRUPT_TILE");
+        else if (ev.kind === "VOID" && ev.x !== null) soundRequests.push("VOID_FORM");
       }
 
-      if (state.asteroidEventSeq !== prev.asteroidEventSeq && state.lastAsteroidDestroyedTiles.length) {
-        const toRect = discardRef.current?.getBoundingClientRect();
-        for (const pt of state.lastAsteroidDestroyedTiles) {
-          const tileEl = document.querySelector(`[data-tile="${pt.x},${pt.y}"]`);
-          if (tileEl) addFlight(tileEl.getBoundingClientRect(), toRect, "#94a3b8", "🪨");
+      if (state.asteroidEventSeq !== prev.asteroidEventSeq) {
+        if (state.lastAsteroidDestroyedTiles.length) {
+          const toRect = discardRef.current?.getBoundingClientRect();
+          for (const pt of state.lastAsteroidDestroyedTiles) {
+            const tileEl = document.querySelector(`[data-tile="${pt.x},${pt.y}"]`);
+            if (tileEl) {
+              const fromRect = tileEl.getBoundingClientRect();
+              runEffect(() => addFlight(fromRect, toRect, "#94a3b8", "🪨"));
+            }
+          }
+          soundRequests.push("ASTEROID_HIT");
         }
+        soundRequests.push("ASTEROID_MOVE");
       }
 
       if (state.starDeckShuffleSeq !== prev.starDeckShuffleSeq) {
-        setStarShuffling(true);
-        setTimeout(() => setStarShuffling(false), 550);
+        runEffect(() => {
+          setStarShuffling(true);
+          setTimeout(() => setStarShuffling(false), 550);
+        });
       }
       if (state.eclipseDeckShuffleSeq !== prev.eclipseDeckShuffleSeq) {
-        setEclipseShuffling(true);
-        setTimeout(() => setEclipseShuffling(false), 550);
+        runEffect(() => {
+          setEclipseShuffling(true);
+          setTimeout(() => setEclipseShuffling(false), 550);
+        });
       }
 
       if (state.shieldBlockSeq !== prev.shieldBlockSeq && state.lastShieldBlock) {
-        setShieldFlashPlayerId(state.lastShieldBlock.playerId);
-        setTimeout(() => setShieldFlashPlayerId(null), 1200);
+        const playerId = state.lastShieldBlock.playerId;
+        runEffect(() => {
+          setShieldFlashPlayerId(playerId);
+          setTimeout(() => setShieldFlashPlayerId(null), 1200);
+        });
       }
 
       if (state.chainEventSeq !== prev.chainEventSeq && state.lastChainEvent) {
-        setChainGlowTiles(new Set(state.lastChainEvent.tiles));
-        setTimeout(() => setChainGlowTiles(null), 3000);
+        const tiles = new Set(state.lastChainEvent.tiles);
+        runEffect(() => {
+          setChainGlowTiles(tiles);
+          setTimeout(() => setChainGlowTiles(null), 3000);
+        });
       }
 
       if (state.surgeEventSeq !== prev.surgeEventSeq && state.lastSurgeEvent) {
-        setSurgeTile({ x: state.lastSurgeEvent.x, y: state.lastSurgeEvent.y });
-        setTimeout(() => setSurgeTile(null), 1000);
+        const tile = { x: state.lastSurgeEvent.x, y: state.lastSurgeEvent.y };
+        runEffect(() => {
+          setSurgeTile(tile);
+          setTimeout(() => setSurgeTile(null), 1000);
+        });
+        // Doesn't distinguish a genuinely successful surge from a no-op one (e.g. Fire finding no
+        // corrupted neighbor to cleanse) — matches the surgeTile flash above, which has always
+        // fired on every surge attempt regardless of outcome; splitting the cue out would need a
+        // richer signal than surgeEventSeq alone carries today.
+        soundRequests.push("ELEMENT_SURGE");
       }
 
       if (state.selfHealSeq !== prev.selfHealSeq && state.lastSelfHealEvent) {
-        setSelfHealFlashPlayerId(state.lastSelfHealEvent.playerId);
-        setTimeout(() => setSelfHealFlashPlayerId(null), 1200);
+        const playerId = state.lastSelfHealEvent.playerId;
+        runEffect(() => {
+          setSelfHealFlashPlayerId(playerId);
+          setTimeout(() => setSelfHealFlashPlayerId(null), 1200);
+        });
       }
 
+      if (state.shootingStarSeq !== prev.shootingStarSeq && state.lastShootingStarEvent) {
+        const type = state.lastShootingStarEvent.type;
+        runEffect(() => {
+          setStarFlash(type);
+          setTimeout(() => setStarFlash(null), 1500);
+        });
+        soundRequests.push("SHOOTING_STAR");
+      }
+
+      if (state.purifySeq !== prev.purifySeq) soundRequests.push("PURIFY");
+      if (state.pathCompleteSeq !== prev.pathCompleteSeq) soundRequests.push("PATH_COMPLETE");
+      if (state.damageEventSeq !== prev.damageEventSeq) soundRequests.push("DAMAGE");
     }
 
-    // Unlike the flight/flash animations above (which would spuriously replay the initial hand
-    // deal/board setup if not skipped on mount), the Status Message banner SHOULD surface the very
-    // first batch of `important()` messages from game init (e.g. "The Orrery awakens...") — there's
-    // no prior message on screen for it to jump away from, so this runs even when `prev` is null.
-    const prevMessageSeq = prev ? prev.messageSeq : 0;
-    if (state.messageSeq !== prevMessageSeq) {
-      // messageLog is unshift-newest-first and capped at 20 — the delta tells us exactly how
-      // many of its front entries are new since last render (a single dispatch can call
-      // `important()` more than once), even across that cap.
-      const newCount = Math.min(state.messageSeq - prevMessageSeq, state.messageLog.length);
-      const fresh = state.messageLog.slice(0, newCount).reverse(); // oldest-of-the-new-batch first
-      setStatusBatch((b) => ({ id: b.id + 1, messages: fresh }));
-    }
+    const chosenSound = resolveSoundConflict(soundRequests);
+    if (chosenSound) runEffect(() => playSound(chosenSound));
 
     const handLengths: Record<number, number> = {};
     state.players.forEach((pl) => { handLengths[pl.id] = pl.hand.length; });
@@ -281,10 +384,71 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
       chainEventSeq: state.chainEventSeq,
       surgeEventSeq: state.surgeEventSeq,
       selfHealSeq: state.selfHealSeq,
+      shootingStarSeq: state.shootingStarSeq,
+      purifySeq: state.purifySeq,
+      cosmicDrawSeq: state.cosmicDrawSeq,
+      pathCompleteSeq: state.pathCompleteSeq,
+      damageEventSeq: state.damageEventSeq,
       messageSeq: state.messageSeq
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
+
+  // Flushes whatever board effects/sound cues the diffing effect above deferred (see
+  // effectsQueueRef/runEffect there) the moment the player has cleared every queued
+  // ImportantMessagesModal batch — i.e. messageQueue drains back to empty, whether because no
+  // batch ever showed up or because the last one just got dismissed via onContinue. A no-op
+  // (empty queue, nothing to flush) covers the common case where nothing was ever deferred.
+  useEffect(() => {
+    if (messageQueue.length === 0 && effectsQueueRef.current.length > 0) {
+      const queued = effectsQueueRef.current;
+      effectsQueueRef.current = [];
+      queued.forEach((fn) => fn());
+    }
+  }, [messageQueue]);
+
+  // Lines the Eclipse Tracker/DeckTray row up with the board's ACTUAL left/right edges — the tile
+  // grid itself (`[data-board-root]`, see GridBoard), not the wider box implied by the WATER/FIRE
+  // edge labels poking out past it, and not just the row's own natural flex box either (which
+  // would only coincidentally match the board's horizontal position). Same "measure the real DOM,
+  // don't trust a formula" pattern CLAUDE.md documents for the edge labels themselves and for
+  // useFitSize — the board is horizontally centered within a variable-width wrapper via flex, so
+  // its real left/right inset from the row's own edges isn't derivable from any fixed formula.
+  //
+  // `rowRect` (the row's own outer bounding box) is safe to measure even though this same effect
+  // is about to set that row's padding — padding insets CONTENT within a border-box element, it
+  // never moves the element's own outer edges, so there's no circularity/feedback loop here.
+  // Re-measures on any resize of either the row or the board (a ResizeObserver only fires on actual
+  // content/border-box SIZE changes, not on the pinch-zoom pan/scale CSS transform GridBoard's own
+  // root can carry on mobile — so an active pinch-zoom gesture won't make this chase the board
+  // around; it simply re-settles next time a genuine layout change fires the observer).
+  const [trackerRowInset, setTrackerRowInset] = useState({ left: 0, right: 0 });
+  useLayoutEffect(() => {
+    const rowEl = trackerRowRef.current;
+    if (!rowEl) return;
+    const measure = () => {
+      const boardEl = document.querySelector<HTMLElement>("[data-board-root]");
+      if (!boardEl) return;
+      const boardRect = boardEl.getBoundingClientRect();
+      const rowRect = rowEl.getBoundingClientRect();
+      if (boardRect.width === 0 || rowRect.width === 0) return;
+      setTrackerRowInset({
+        left: Math.max(0, boardRect.left - rowRect.left),
+        right: Math.max(0, rowRect.right - boardRect.right)
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(rowEl);
+    const boardEl = document.querySelector<HTMLElement>("[data-board-root]");
+    if (boardEl) ro.observe(boardEl);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.tiles.length, isMobile, boardRotated]);
 
   const litKeys = useMemo(() => {
     const lit = new Set<string>();
@@ -521,13 +685,36 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
   };
 
   useEffect(() => {
-    if (state.phase !== "playing") return;
+    // Bails out once the game has ended (`state.phase !== "playing"`) — EXCEPT when a message
+    // batch is still queued, which must stay keyboard-dismissible even then. A real bug, not just
+    // theoretical: `checkWin`/checkLoss's callers flip `state.phase` to "won"/"lost" in the exact
+    // same dispatch that raises the WIN/tracker-100%/all-Stasis `important()` message (see
+    // reducer.ts), so by the time that batch's modal is actually on screen, `state.phase` has
+    // ALREADY left "playing" — an unconditional early return here would tear down this effect's
+    // `onKeyDown` listener (its cleanup already ran on the previous render) and never re-attach
+    // it, leaving Space/Enter completely dead for a modal the player still needs to dismiss (only
+    // clicking Continue or the backdrop would still work). The `messageQueue.length > 0` branch
+    // inside `onKeyDown` below already swallows every other key while a batch is queued, so
+    // keeping the listener attached here can't leak board-cursor/mode-toggle shortcuts into a
+    // "won"/"lost" screen — those are only ever reachable once `messageQueue` is empty again.
+    if (state.phase !== "playing" && messageQueue.length === 0) return;
     const p = state.players[state.active];
     const discardCost = p.sign === "LIBRA" && !state.libraUsed ? 0 : 1;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
+
+      // While an important-messages modal is queued up, Space/Enter dismiss IT (advancing to the
+      // next queued batch, if any) and nothing else should leak through to board navigation or mode
+      // toggles underneath — same "swallow everything, only act on the modal's own keys" pattern as
+      // showEndTurnConfirm right below, checked first since a message batch can arrive mid-turn (a
+      // placement's own path-complete/chain/surge messages), not just at End Turn.
+      if (messageQueue.length > 0) {
+        if (k === "enter" || k === " ") setMessageQueue((q) => q.slice(1));
+        e.preventDefault();
+        return;
+      }
 
       // While the confirmation modal is up, Enter/Escape drive IT (confirm/cancel) and nothing
       // else should leak through to board navigation or mode toggles underneath.
@@ -626,7 +813,7 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated]);
+  }, [state, mode, discardSel, selectedCard, rotation, boardCursor, showEndTurnConfirm, shieldPreview, boardRotated, messageQueue]);
 
   return (
     // Fixed `h-dvh` + `overflow-hidden` on ALL breakpoints now (not just `md:`) — mobile used to let
@@ -669,8 +856,11 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           not scrollable either, so anything that didn't fit was simply cut off by the ROOT's own
           `h-dvh overflow-hidden` with no way to reach it. Scrolling here on desktop too fixes that;
           `gap-1.5` (not `gap-3`) below `md:` — every bit of vertical chrome above the board is
-          space the board doesn't get. */}
-      <div ref={topPaneRef} className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto overflow-x-hidden">
+          space the board doesn't get. `ca-hide-scrollbar` (styles.ts) suppresses the scrollbar
+          track/thumb without touching actual scroll behavior — this pane reads as the board itself
+          plus its header chrome, not a list-like panel, so a visible scrollbar here looked like
+          stray UI rather than a feature. */}
+      <div ref={topPaneRef} className="flex-1 min-h-0 flex flex-col gap-1.5 md:gap-3 overflow-y-auto overflow-x-hidden ca-hide-scrollbar">
         {/* A 3-column grid (not the earlier centered-flex + absolute-positioned-siblings layout)
             so the left/right clusters can never overlap the title: each sibling gets its own
             track instead of being pulled out of flow to float over it. The outer two tracks share
@@ -712,10 +902,14 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           </div>
         </div>
 
-        {/* StatusMessage + DeckTray + Eclipse Tracker share ONE header block — a single live
-            instance of each (not a duplicated mobile/desktop pair like CardHand/ActionButtons
-            below), since none of them need fundamentally different JSX per breakpoint, just
-            different chrome/grouping around them. On mobile this whole block becomes a `sticky
+        {/* Eclipse Tracker + DeckTray share ONE header block — a single live instance of each (not
+            a duplicated mobile/desktop pair like CardHand/ActionButtons below), since neither needs
+            fundamentally different JSX per breakpoint, just different chrome/grouping around them.
+            The Eclipse Tracker now lives in the slot the old StatusMessage banner used to occupy
+            (StatusMessage was replaced entirely by ImportantMessagesModal — see that component's
+            own doc comment — freeing this prime, board-adjacent real estate) and is the ONLY place
+            it renders now, at both breakpoints; ControlPanel's own former desktop copy was removed
+            to avoid showing two trackers at once. On mobile this whole block becomes a `sticky
             top-0` card (border/background/padding all gated `md:`-off below) so it pins to the top
             of the TOP PANE's own scroll container once the page scrolls past it, rather than
             scrolling away with the board underneath — a solid-ish background is needed there
@@ -729,35 +923,40 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
           ref={stickyHeaderRef}
           className="flex flex-col gap-1.5 shrink-0 sticky top-0 z-20 md:static md:z-auto rounded-lg md:rounded-none border border-[#2a2340] md:border-0 px-1.5 py-1.5 md:p-0 bg-black/35 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none"
         >
-          {/* `flex-col md:flex-row` outer + `md:contents` on the DeckTray/Tracker wrapper is what
-              lets StatusMessage claim the FULL card width on its own row on mobile (far less text
-              wrapping, so its worst-case measured height — see StatusMessage's own doc comment —
-              stays much smaller than when it had to squeeze beside DeckTray) while desktop stays
-              pixel-identical to the original single-row [StatusMessage, DeckTray] layout: at `md:`
-              the wrapper vanishes from the box model (`contents`) and promotes its children back
-              up to be direct flex items of THIS row, and since the Eclipse Tracker div inside it is
-              itself `md:hidden`, only DeckTray survives into that row at desktop — exactly the two
-              original children, in the original order. */}
-          <div className="flex flex-col md:flex-row items-stretch gap-1.5 md:gap-2">
-            <StatusMessage batchId={statusBatch.id} messages={statusBatch.messages} />
-            <div className="flex items-center gap-1.5 md:contents">
-              <DeckTray
-                starCount={state.starDeck.length}
-                eclipseCount={state.eclipseDeck.length}
-                discardCount={state.starDiscard.length}
-                starShuffling={starShuffling}
-                eclipseShuffling={eclipseShuffling}
-                starRef={starDeckRef}
-                eclipseRef={eclipseDeckRef}
-                discardRef={discardRef}
-              />
-              <div
-                className="flex-1 min-w-0 md:hidden"
-                style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
-              >
-                <EclipseTracker value={state.tracker} />
-              </div>
+          {/* `flex-col md:flex-row` is what stacks the Tracker above DeckTray on mobile (full card
+              width each, easier to read on a narrow screen) while sitting them side-by-side on
+              desktop — no `md:contents` trick needed here since, unlike StatusMessage before it,
+              the Tracker doesn't need special-casing between breakpoints beyond its own internal
+              `md:` text/bar sizing (see EclipseTracker). `paddingLeft`/`paddingRight` (measured, see
+              the trackerRowInset effect above) push the Tracker's own left edge and DeckTray's own
+              right edge out to line up with the board's ACTUAL rendered edges rather than this
+              row's own natural flex box. `md:gap-8` (up from a plain `gap-2`) is deliberately
+              generous — besides just being breathing room between the Tracker and DeckTray, a
+              bigger gap directly narrows the Tracker's own rendered width too, since it's `flex-1`
+              (fills whatever space remains after the gap and DeckTray's own width are subtracted)
+              — this is what keeps the Tracker from stretching edge-to-edge now that it's not
+              sharing the row with StatusMessage's old bulkier text anymore. */}
+          <div
+            ref={trackerRowRef}
+            className="flex flex-col md:flex-row items-stretch gap-1.5 md:gap-8"
+            style={{ paddingLeft: trackerRowInset.left, paddingRight: trackerRowInset.right }}
+          >
+            <div
+              className="flex-1 min-w-0 flex flex-col justify-center rounded-lg px-2 md:px-4 py-1 md:py-1.5"
+              style={{ animation: starFlash === "TRACKER_DOWN" ? "caStarFlash 3s ease-out" : undefined }}
+            >
+              <EclipseTracker value={state.tracker} />
             </div>
+            <DeckTray
+              starCount={state.starDeck.length}
+              eclipseCount={state.eclipseDeck.length}
+              discardCount={state.starDiscard.length}
+              starShuffling={starShuffling}
+              eclipseShuffling={eclipseShuffling}
+              starRef={starDeckRef}
+              eclipseRef={eclipseDeckRef}
+              discardRef={discardRef}
+            />
           </div>
         </div>
 
@@ -779,11 +978,14 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
             board sized to the full available width (see `widthPriority` above) sits close enough
             to its neighboring sections that a top/bottom edge label's overflow bleeds through their
             semi-transparent backgrounds. Not needed on desktop, where the wrapper already had
-            plenty of surrounding slack from its `md:min-h-[420px]` floor. */}
-        <div ref={boardWrapRef} className="md:flex-1 md:min-h-[420px] my-7 md:my-0 flex items-center justify-center">
+            plenty of surrounding slack from its `md:min-h-[420px]` floor. `md:mt-3` adds a bit more
+            breathing room above the board specifically, on top of the topPaneRef flex column's own
+            `gap-3` between every section — the Eclipse Tracker/DeckTray header row sat right on top
+            of the board's own AIR edge label with just the plain flex gap. */}
+        <div ref={boardWrapRef} className="md:flex-1 md:min-h-[420px] my-7 md:mt-3 md:mb-0 flex items-center justify-center">
           {/* Pinch-zoom container/content split (see usePinchZoomPan's own doc comment) — only
               the board itself sits inside `contentRef`, deliberately NOT the sticky
-              StatusMessage/DeckTray/Eclipse-Tracker header above (a transformed ancestor breaks
+              Eclipse-Tracker/DeckTray header above (a transformed ancestor breaks
               `position: sticky` on descendants) and NOT the bottom pane below (a separate sibling
               entirely, outside this wrapper's DOM subtree, so it's structurally impossible for the
               zoom transform to reach it). `containerRef` clips zoomed content to this box and is
@@ -1023,6 +1225,13 @@ export function GameScreen({ state, dispatch }: { state: GameState; dispatch: (a
         <EndOverlay reason={state.lossReason} onReset={doBack} onClose={() => setDismissedEndOverlay(true)} />
       )}
       {showEndTurnConfirm && <EndTurnConfirmModal onConfirm={doEndTurn} onCancel={() => setShowEndTurnConfirm(false)} />}
+      {/* z-[60] — deliberately above EndOverlay/EndTurnConfirmModal's z-50, so if a batch of
+          important messages was generated by the same dispatch that also ended the game (e.g. an
+          Eclipse Tracker hazard pushing the tracker to 100%), the player sees what happened BEFORE
+          the loss screen takes over, rather than the two competing for the same top layer. */}
+      {messageQueue.length > 0 && (
+        <ImportantMessagesModal title={messageQueue[0].title} messages={messageQueue[0].messages} onContinue={() => setMessageQueue((q) => q.slice(1))} />
+      )}
       <FlightLayer flights={flights} onDone={removeFlight} />
     </div>
   );

@@ -1,4 +1,5 @@
 import type { GameState } from "../types";
+import type { MessageKind } from "./messageKinds";
 
 /** Formats a number for display in a log message: whole when the value is (effectively) an
  * integer, otherwise rounded to 1 decimal place. Several tracker-related values are deliberately
@@ -41,12 +42,19 @@ export function trackerDelta(before: number, after: number): string {
  * channeling a card, purifying, healing). Call this IN ADDITION to `log`/`logGroup` with the same
  * call site's message — it never substitutes for the full Event Log, it only mirrors select
  * entries into the shorter, curated feed. `messageSeq` increments on every call, uncapped (unlike
- * `messageLog` itself, capped at 20) — `StatusMessage`'s `GameScreen` wiring diffs it against the
- * previous render to know exactly how many entries at the front of `messageLog` are new since last
- * time, since a single dispatch can call `important` more than once (e.g. a placement that both
- * completes a chain-of-4 and triggers an Element Surge). */
-export function important(s: GameState, msg: string) {
+ * `messageLog` itself, capped at 20) — `GameScreen`'s ImportantMessagesModal wiring diffs it against
+ * the previous render to know exactly how many entries at the front of `messageLog` are new since
+ * last time, since a single dispatch can call `important` more than once (e.g. a placement that both
+ * completes a chain-of-4 and triggers an Element Surge).
+ *
+ * `kind` is required (not optional/defaulted) specifically so every call site is forced to pick a
+ * MessageKind — see messageKinds.ts — keeping `messageKindLog` perfectly in lockstep with
+ * `messageLog` (same push, same cap, same order) with no way for a call site to silently opt out
+ * and desync the two arrays. */
+export function important(s: GameState, msg: string, kind: MessageKind) {
   s.messageLog.unshift(msg);
   if (s.messageLog.length > 20) s.messageLog.pop();
+  s.messageKindLog.unshift(kind);
+  if (s.messageKindLog.length > 20) s.messageKindLog.pop();
   s.messageSeq += 1;
 }

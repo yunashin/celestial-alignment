@@ -129,7 +129,12 @@ export function GridBoard({
   }, [width, height, state.nodes, rotated]);
 
   return (
-    <div ref={ref} className="relative mx-auto" style={{ width, height }}>
+    // `data-board-root` — GameScreen measures this element's real rendered rect (see its Eclipse
+    // Tracker/DeckTray alignment effect) to line the header row up with the board's ACTUAL edges
+    // rather than the wider box implied by the edge labels (which poke out past this box via
+    // absolute overflow, see EdgeLabel above) — same "measure the real DOM" pattern as the
+    // edgePercents effect directly above.
+    <div ref={ref} data-board-root className="relative mx-auto" style={{ width, height }}>
       {/* A 90° clockwise rotation shifts every edge one position clockwise: AIR (top) → right,
           FIRE (right) → bottom, EARTH (bottom) → left, WATER (left) → top. `vertical` (which
           switches the label to sideways `writing-mode: vertical-rl` text) flips along with it —

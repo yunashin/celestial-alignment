@@ -115,6 +115,7 @@ export function initGame(setup: PlayerSetup[], locale: string = getLocale(), see
     turn: 1,
     log: [],
     messageLog: [],
+    messageKindLog: [],
     messageSeq: 0,
     ariesUsed: false,
     cancerShieldTurnsLeft: 0,
@@ -145,13 +146,19 @@ export function initGame(setup: PlayerSetup[], locale: string = getLocale(), see
     chainEventSeq: 0,
     lastChainEvent: null,
     surgeEventSeq: 0,
-    lastSurgeEvent: null
+    lastSurgeEvent: null,
+    purifySeq: 0,
+    cosmicDrawSeq: 0,
+    pathCompleteSeq: 0,
+    lastPathCompleteElement: null,
+    damageEventSeq: 0,
+    lastDamageEvent: null
   };
   for (const p of s.players) drawCards(s, p, handSize(s, p));
   const names = formatList([...new Set(s.players.map((p) => p.name))], locale);
   const openingMsg = tr("log.orreryAwakens", { names, koreanArticle: getKoreanArticle(names[names.length - 1]) });
   log(s, openingMsg);
-  important(s, openingMsg);
+  important(s, openingMsg, "GAME_START");
   log(s, tr("log.turnAnnounce", { name: s.players[0].name, ap: STARTING_AP }));
   return s;
 }
@@ -168,7 +175,7 @@ function activateShootingStar(s: GameState, tile: Tile, p: Player) {
       s.tracker = Math.max(0, s.tracker - SHOOTING_STAR_TRACKER_DOWN_PCT);
       const msg = tr("log.shootingStarTrackerDown", { pct: SHOOTING_STAR_TRACKER_DOWN_PCT });
       log(s, msg + trackerDelta(trackerBefore, s.tracker));
-      important(s, msg);
+      important(s, msg, "SHOOTING_STAR");
       break;
     }
     case "BONUS_AP": {
@@ -176,7 +183,7 @@ function activateShootingStar(s: GameState, tile: Tile, p: Player) {
       s.ap += SHOOTING_STAR_AP_BONUS;
       const msg = tr("log.shootingStarBonusAp", { amount: SHOOTING_STAR_AP_BONUS });
       log(s, msg);
-      important(s, msg);
+      important(s, msg, "SHOOTING_STAR");
       break;
     }
     case "BONUS_HAND": {
@@ -184,14 +191,14 @@ function activateShootingStar(s: GameState, tile: Tile, p: Player) {
       drawCards(s, p, SHOOTING_STAR_HAND_BONUS);
       const msg = tr("log.shootingStarBonusHand", { amount: SHOOTING_STAR_HAND_BONUS });
       log(s, msg);
-      important(s, msg);
+      important(s, msg, "SHOOTING_STAR");
       break;
     }
     case "HEAL_UNLOCK": {
       s.selfHealUnlocked = true;
       const msg = tr("log.shootingStarHealUnlock", { amount: SHOOTING_STAR_SELF_HEAL_AMOUNT });
       log(s, msg);
-      important(s, msg);
+      important(s, msg, "SHOOTING_STAR");
       break;
     }
   }
@@ -294,12 +301,16 @@ function triggerAsteroidShift(s: GameState) {
   // Only the header goes into the curated Message Log — the per-tile "↳" follow-ups are the kind
   // of verbose detail that belongs in the full Event Log, not the compact feed (mirrors how the
   // asteroid's own path sweep already treats its header vs. sub-lines differently for narrative
-  // grouping — see logGroup's doc comment).
+  // grouping — see logGroup's doc comment). Uses the coordinate-free "Important" variant (see
+  // en.yaml/ko.yaml) rather than reusing the detailed log()-bound text above — tile coordinates are
+  // meaningful in the full Event Log (which sits right next to the board) but not in the curated
+  // modal feed, which is meant to read as a plain-language summary.
   important(
     s,
     destroyedTiles.length
-      ? tr("log.asteroidDestroysSummary", { sx: source.x, sy: source.y, count: destroyedTiles.length, plural: pluralSuffix(destroyedTiles.length), dx: dest.x, dy: dest.y })
-      : messages[0]
+      ? tr("log.asteroidDestroysSummaryImportant", { count: destroyedTiles.length, plural: pluralSuffix(destroyedTiles.length) })
+      : tr("log.asteroidHeaderImportant"),
+    "ASTEROID"
   );
   s.asteroidEventSeq += 1;
   s.lastAsteroidDestroyedTiles = destroyedTiles.map((t) => ({ x: t.x, y: t.y }));
@@ -315,7 +326,7 @@ export function checkWin(s: GameState) {
     s.phase = "won";
     const msg = tr("log.win", { count: required.length });
     log(s, msg);
-    important(s, msg);
+    important(s, msg, "WIN");
   }
 }
 
@@ -417,7 +428,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             }
           }
           log(s, msg + trackerDelta(trackerBefore, s.tracker));
-          important(s, msg);
+          important(s, msg, "PATH_COMPLETE");
+          s.pathCompleteSeq += 1;
+          s.lastPathCompleteElement = el;
         }
       }
       const chainAfterGroup = computeSameElementChainGroup(s.tiles, card.element, action.x, action.y);
@@ -458,7 +471,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           tr("log.chain", { glyph: glyphMsg, label: elementLabel(tr, card.element), count: chainAfter, sx: chainStart.x, sy: chainStart.y, ex: chainEnd.x, ey: chainEnd.y }) +
           trackerPhrase;
         log(s, chainMsg + trackerDelta(trackerBefore, s.tracker));
-        important(s, chainMsg);
+        // Coordinate-free "Important" variant for the curated feed/modal — see the asteroid
+        // summary's own comment above for why this diverges from the detailed log() text.
+        const chainMsgImportant = tr("log.chainImportant", { glyph: glyphMsg, label: elementLabel(tr, card.element), count: chainAfter }) + trackerPhrase;
+        important(s, chainMsgImportant, "CHAIN");
       }
       if (card.element === p.element) {
         s.surgeEventSeq += 1;
@@ -468,7 +484,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             drawCards(s, p, 1);
             const msg = tr("log.airSurge", { name: p.name, koreanArticle });
             log(s, msg);
-            important(s, msg);
+            important(s, msg, "ELEMENT_SURGE");
             break;
           }
           case "FIRE": {
@@ -480,15 +496,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
                 s.tiles[nx][ny].isCorrupted = false;
                 const msg = tr("log.fireSurgeCleanse", { x: nx, y: ny });
                 log(s, msg);
-                important(s, msg);
+                important(s, tr("log.fireSurgeCleanseImportant"), "ELEMENT_SURGE");
                 cleansed = true;
                 break;
               }
             }
             if (!cleansed) {
-              const msg = tr("log.fireSurgeNoTarget");
-              log(s, msg);
-              important(s, msg);
+              // log() only, no important() — no adjacent corruption to burn means Fire Surge did
+              // nothing, which isn't curated-feed/modal-worthy (same reasoning as Water Surge's own
+              // no-target case above).
+              log(s, tr("log.fireSurgeNoTarget"));
             }
             break;
           }
@@ -496,7 +513,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             placedTile.isLocked = true;
             const msg = tr("log.earthSurge", { x: action.x, y: action.y });
             log(s, msg);
-            important(s, msg);
+            important(s, tr("log.earthSurgeImportant"), "ELEMENT_SURGE");
             break;
           }
           case "WATER": {
@@ -504,18 +521,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               s.cancerShieldTurnsLeft = CANCER_SHIELD_TURN_LIMIT;
               const msg = tr("log.cancerShield", { name: p.name, count: CANCER_SHIELD_TURN_LIMIT - 1, plural: pluralSuffix(CANCER_SHIELD_TURN_LIMIT - 1) });
               log(s, msg);
-              important(s, msg);
+              important(s, msg, "ELEMENT_SURGE");
             }
             const wounded = s.players.filter((q) => !q.isStasis && q.hp < q.maxHp).sort((a, b) => a.hp - b.hp || (a.id === p.id ? -1 : 0));
             let msg: string;
             if (wounded.length) {
               wounded[0].hp += 1;
               msg = tr("log.waterSurgeHeal", { name: wounded[0].name, hp: wounded[0].hp });
+              log(s, msg);
+              // Only mirrored into the curated feed/modal when a heal actually happened — every
+              // Guardian already being at full HP means this ability did nothing, which isn't
+              // "important()"-worthy (see log.ts's own doc comment on what belongs in the curated
+              // feed: genuinely notable events, not a no-op). log() still always fires either way,
+              // so the full Event Log keeps recording it regardless.
+              important(s, msg, "ELEMENT_SURGE");
             } else {
               msg = tr("log.waterSurgeNoTarget");
+              log(s, msg);
             }
-            log(s, msg);
-            important(s, msg);
             break;
           }
         }
@@ -535,7 +558,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (newlyEnclosed > 0) {
         const msg = tr("log.enclosedLoop", { count: newlyEnclosed, plural: pluralSuffix(newlyEnclosed) });
         log(s, msg);
-        important(s, msg);
+        important(s, msg, "ENCLOSED_LOOP");
       }
       if (placedTile.isShootingStar) activateShootingStar(s, placedTile, p);
       checkWin(s);
@@ -553,6 +576,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       s.tiles[action.x][action.y].isCorrupted = false;
       s.tiles[action.x][action.y].isPurified = true;
       s.tiles[action.x][action.y].corruptionTurnsLeft = null;
+      s.purifySeq += 1;
       log(s, tr("log.purify", { name: p.name, x: action.x, y: action.y, koreanArticle }) + (cost === 0 ? tr("log.purifyRootedForm") : "") + ".");
       if (p.sign === "LEO") {
         const route = tracePathBetween(s.tiles, p.position, { x: action.x, y: action.y });
@@ -634,7 +658,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           n++;
         }
       }
-      if (n > 0) s.discardEventSeq += 1;
+      if (n > 0) {
+        s.discardEventSeq += 1;
+        s.cosmicDrawSeq += 1;
+      }
       if (p.sign === "PISCES" && n > 0) {
         const healed = Math.min(p.maxHp, p.hp + Math.min(n, 2)) - p.hp;
         p.hp += healed;
@@ -671,9 +698,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             t.placedBy = null;
             t.corruptionTurnsLeft = null;
             t.crumbleStep = s.turn;
-            const msg = tr("log.corruptionDecay", { cardPhrase: card ? article(elementLabel(tr, card.element)) + " " : "a ", x: t.x, y: t.y });
+            const cardPhrase = card ? article(elementLabel(tr, card.element)) + " " : "a ";
+            const msg = tr("log.corruptionDecay", { cardPhrase, x: t.x, y: t.y });
             log(s, msg);
-            important(s, msg);
+            important(s, tr("log.corruptionDecayImportant", { cardPhrase }), "CORRUPTION_DECAY");
           }
         }
       }
@@ -688,7 +716,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         s.lastSelfHealEvent = { playerId: p.id };
         const msg = tr("log.selfHeal", { name: p.name, amount: SHOOTING_STAR_SELF_HEAL_AMOUNT, hp: p.hp, maxHp: p.maxHp });
         log(s, msg);
-        important(s, msg);
+        important(s, msg, "SELF_HEAL");
       }
 
       drawCards(s, p, handSize(s, p) - p.hand.length);
@@ -702,7 +730,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           q.hp = 1;
           const msg = tr("log.stasisReboot", { name: q.name });
           log(s, msg);
-          important(s, msg);
+          important(s, msg, "STASIS_REBOOT");
         }
       }
       for (let i = 1; i <= s.players.length; i++) {
@@ -718,7 +746,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         if (s.cancerShieldTurnsLeft === 0) {
           const msg = tr('log.cancerShieldDeactivated');
           log(s, msg);
-          important(s, msg);
+          important(s, msg, "CANCER_SHIELD");
         }
       }
       // Ticks down only at the moment control returns to the Virgo player specifically (not once

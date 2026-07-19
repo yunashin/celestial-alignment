@@ -47,14 +47,22 @@ export function computeLunarShieldTiles(s: GameState): Set<string> {
  * Only standalone calls (no `out`) mirror their message into the curated Message Log — a grouped
  * call already has its own header message marked important by the caller (see triggerAsteroidShift
  * in reducer.ts), so per-tile damage lines within that group would just be redundant sub-line
- * clutter in the compact feed. */
+ * clutter in the compact feed.
+ *
+ * `damageEventSeq`/`lastDamageEvent` bump unconditionally on any actual HP loss — standalone OR
+ * grouped alike, unlike the `important()` mirroring above — since the "a player took damage" SOUND
+ * cue (see utils/sound.ts) should fire regardless of whether this particular call also produces its
+ * own curated-feed message, matching how a grouped call (an asteroid sweep, an Eclipse Damage card)
+ * still very much represents "a Guardian got hurt" even though the per-victim TEXT line is folded
+ * into the caller's own header message instead of getting its own important() entry. Never bumped
+ * on a Cancer-shield block — that's already a distinct signal via shieldBlockSeq/lastShieldBlock. */
 export function damage(s: GameState, target: Player, amt: number, source: string, out?: string[]) {
   if (target.isStasis) return;
   const emit = (msg: string) => {
     if (out) out.push(msg);
     else {
       log(s, msg);
-      important(s, msg);
+      important(s, msg, "DAMAGE");
     }
   };
   const shieldingCancer = findShieldingCancer(s, target);
@@ -65,6 +73,8 @@ export function damage(s: GameState, target: Player, amt: number, source: string
     return;
   }
   target.hp = Math.max(0, target.hp - amt);
+  s.damageEventSeq += 1;
+  s.lastDamageEvent = { playerId: target.id };
   emit(tr("log.damageTaken", { name: target.name, amount: amt, source, hp: target.hp }));
   if (target.hp === 0) {
     target.isStasis = true;
@@ -108,9 +118,11 @@ export function resolveEclipse(s: GameState) {
       t.corruptionTurnsLeft = CORRUPTION_DECAY_TURNS;
       const trackerBefore = s.tracker;
       s.tracker = s.tracker + ECLIPSE_CORRUPTION_TRACKER_BUMP;
-      const msg = tr("log.corruptionSeize", { glyph: ELEMENT_META[c.element!].glyph, label: elementLabel(tr, c.element!), x: t.x, y: t.y, pct: ECLIPSE_CORRUPTION_TRACKER_BUMP });
+      const glyph = ELEMENT_META[c.element!].glyph;
+      const label = elementLabel(tr, c.element!);
+      const msg = tr("log.corruptionSeize", { glyph, label, x: t.x, y: t.y, pct: ECLIPSE_CORRUPTION_TRACKER_BUMP });
       log(s, msg + trackerDelta(trackerBefore, s.tracker));
-      important(s, msg);
+      important(s, tr("log.corruptionSeizeImportant", { glyph, label, pct: ECLIPSE_CORRUPTION_TRACKER_BUMP }), "ECLIPSE_CORRUPTION");
       emitEvent(t.x, t.y);
       for (const p of s.players) {
         if (p.position.x === t.x && p.position.y === t.y) damage(s, p, HAZARD_DAMAGE, tr("log.damageSourceCorruption"));
@@ -121,7 +133,7 @@ export function resolveEclipse(s: GameState) {
       s.tracker = Math.min(100, s.tracker + bump);
       const msg = tr("log.corruptionNoTarget", { label: elementLabel(tr, c.element!), pct: fmtNum(bump) });
       log(s, msg + trackerDelta(trackerBefore, s.tracker));
-      important(s, msg);
+      important(s, msg, "ECLIPSE_CORRUPTION");
       emitEvent(null, null);
     }
   } else if (c.type === "VOID") {
@@ -136,7 +148,7 @@ export function resolveEclipse(s: GameState) {
       s.tracker = s.tracker + ECLIPSE_VOID_TRACKER_BUMP;
       const msg = tr("log.voidForms", { x: t.x, y: t.y, pct: ECLIPSE_VOID_TRACKER_BUMP });
       log(s, msg + trackerDelta(trackerBefore, s.tracker));
-      important(s, msg);
+      important(s, tr("log.voidFormsImportant", { pct: ECLIPSE_VOID_TRACKER_BUMP }), "ECLIPSE_VOID");
       emitEvent(t.x, t.y);
       for (const p of s.players) {
         if (manhattan(p.position, t) === 1) damage(s, p, HAZARD_DAMAGE, tr("log.damageSourceVoidGravity"));
@@ -147,7 +159,7 @@ export function resolveEclipse(s: GameState) {
       s.tracker = Math.min(100, s.tracker + bump);
       const msg = tr("log.voidNoSpace", { pct: fmtNum(bump), total: fmtNum(s.tracker) });
       log(s, msg + trackerDelta(trackerBefore, s.tracker));
-      important(s, msg);
+      important(s, msg, "ECLIPSE_VOID");
       emitEvent(null, null);
     }
   } else if (c.type === "SURGE") {
@@ -161,7 +173,7 @@ export function resolveEclipse(s: GameState) {
       tr("log.eclipseSurge", { amt: fmtNum(amt) }) +
       (corrupted ? tr("log.eclipseSurgeScaling", { pct: fmtNum(scaling * eclipseEffectScale(s)), count: corrupted, plural: pluralSuffix(corrupted) }) : ".");
     log(s, msg + trackerDelta(trackerBefore, s.tracker));
-    important(s, msg);
+    important(s, msg, "ECLIPSE_SURGE");
     emitEvent(null, null);
   } else {
     // DAMAGE — unlike Corruption/Void (which pick ONE random tile/target), this hits EVERY living
@@ -179,7 +191,7 @@ export function resolveEclipse(s: GameState) {
     const victims = s.players.filter((p) => !p.isStasis && c.damageElements!.includes(p.element));
     for (const p of victims) damage(s, p, c.damageHpLost!, tr("log.damageSourceEclipse"), messages);
     logGroup(s, messages);
-    important(s, headerMsg);
+    important(s, headerMsg, "ECLIPSE_DAMAGE");
     emitEvent(null, null);
   }
 }
